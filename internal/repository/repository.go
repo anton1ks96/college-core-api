@@ -1,0 +1,26 @@
+package repository
+
+import (
+	"context"
+	"io"
+
+	"github.com/anton1ks96/college-core-api/internal/domain"
+)
+
+type DatasetRepository interface {
+	Create(ctx context.Context, dataset *domain.Dataset) error
+	GetByID(ctx context.Context, id string) (*domain.Dataset, error)
+	GetByUserID(ctx context.Context, userID string, offset, limit int) ([]domain.Dataset, int, error)
+	GetAll(ctx context.Context, offset, limit int) ([]domain.Dataset, int, error)
+	Update(ctx context.Context, dataset *domain.Dataset) error
+	Delete(ctx context.Context, id string) error
+	CountByUserID(ctx context.Context, userID string) (int, error)
+	UpdateIndexedAt(ctx context.Context, id string) error
+}
+
+type FileRepository interface {
+	Upload(ctx context.Context, path string, content io.Reader, contentType string) error
+	Download(ctx context.Context, path string) ([]byte, error)
+	Delete(ctx context.Context, path string) error
+	Exists(ctx context.Context, path string) (bool, error)
+}

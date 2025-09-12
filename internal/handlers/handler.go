@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/anton1ks96/college-core-api/internal/config"
 	v1 "github.com/anton1ks96/college-core-api/internal/handlers/v1"
+	"github.com/anton1ks96/college-core-api/internal/httpmw"
 	"github.com/anton1ks96/college-core-api/internal/services"
 	"github.com/gin-gonic/gin"
 )
@@ -25,9 +26,9 @@ func (h *Handler) Init() *gin.Engine {
 	router.Use(
 		gin.Recovery(),
 		gin.Logger(),
-		ErrorHandlerMiddleware(),
-		CORSMiddleware(),
-		RequestIDMiddleware(),
+		httpmw.ErrorHandlerMiddleware(),
+		httpmw.CORSMiddleware(),
+		httpmw.RequestIDMiddleware(),
 	)
 
 	router.GET("/health", h.healthCheck)
@@ -44,7 +45,7 @@ func (h *Handler) initAPI(router *gin.Engine) {
 	v1Handler := v1.NewHandler(h.services, h.cfg)
 	v1Group := api.Group("/v1")
 
-	v1Group.Use(AuthMiddleware(h.services.Auth))
+	v1Group.Use(httpmw.AuthMiddleware(h.services.Auth))
 
 	v1Handler.Init(v1Group)
 }

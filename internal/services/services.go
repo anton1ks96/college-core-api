@@ -46,9 +46,13 @@ type Deps struct {
 
 func NewServices(deps Deps) *Services {
 	authService := NewAuthService(deps.Config)
+	ragService := NewRAGService(deps.Config)
+	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
 
 	return &Services{
-		Auth: authService,
+		Dataset: datasetService,
+		Auth:    authService,
+		RAG:     ragService,
 	}
 }
 

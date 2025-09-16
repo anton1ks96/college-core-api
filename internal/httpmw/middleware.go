@@ -1,37 +1,29 @@
 package httpmw
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"strconv"
 
 	"github.com/anton1ks96/college-core-api/internal/services"
 	"github.com/anton1ks96/college-core-api/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/time/rate"
-	"strconv"
 )
 
 func AuthMiddleware(authService services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header is missing"})
+		token, err := extractToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token is missing"})
-			c.Abort()
-			return
-		}
+
 		user, err := authService.ValidateToken(c.Request.Context(), token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -47,9 +39,9 @@ func AuthMiddleware(authService services.AuthService) gin.HandlerFunc {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Origin", "http://localhost:5173")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusOK)
@@ -112,4 +104,25 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 		}()
 		c.Next()
 	}
+}
+
+func extractToken(c *gin.Context) (string, error) {
+	token := c.GetHeader("Authorization")
+	if token != "" {
+		if !strings.HasPrefix(token, "Bearer ") {
+			return "", fmt.Errorf("invalid authorization header format")
+		}
+		extractedToken := strings.TrimPrefix(token, "Bearer ")
+		if extractedToken == "" {
+			return "", fmt.Errorf("empty token in authorization header")
+		}
+		return extractedToken, nil
+	}
+
+	cookieToken, err := c.Cookie("access_token")
+	if err == nil && cookieToken != "" {
+		return cookieToken, nil
+	}
+
+	return "", fmt.Errorf("authorization header is missing")
 }

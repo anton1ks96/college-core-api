@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/pkg/logger"
 	_ "github.com/go-sql-driver/mysql"

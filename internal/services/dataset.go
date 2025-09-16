@@ -121,7 +121,7 @@ func (s *DatasetServiceImpl) GetList(ctx context.Context, userID string, role st
 	var total int
 	var err error
 
-	if role == "teacher" {
+	if role == "teacher" || role == "admin" {
 		datasets, total, err = s.repos.Dataset.GetAll(ctx, offset, limit)
 	} else {
 		datasets, total, err = s.repos.Dataset.GetByUserID(ctx, userID, offset, limit)
@@ -157,16 +157,6 @@ func (s *DatasetServiceImpl) Update(ctx context.Context, datasetID, userID, titl
 		if err := s.repos.File.Upload(ctx, dataset.FilePath, strings.NewReader(*content), "text/markdown"); err != nil {
 			return nil, fmt.Errorf("failed to upload new content: %w", err)
 		}
-
-		go func(id, title, body string) {
-			chunks, err := s.ragService.IndexDataset(context.Background(), id, title, body)
-			if err != nil {
-				logger.Error(fmt.Errorf("failed to reindex dataset %s: %w", id, err))
-				return
-			}
-			_ = s.repos.Dataset.UpdateIndexedAt(context.Background(), id)
-			logger.Info(fmt.Sprintf("dataset %s reindexed with %d chunks", id, chunks))
-		}(dataset.ID, dataset.Title, *content)
 	}
 
 	if err := s.repos.Dataset.Update(ctx, dataset); err != nil {

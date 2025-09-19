@@ -28,15 +28,6 @@ func NewDatasetService(repos *Repositories, ragService RAGService, cfg *config.C
 }
 
 func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, content io.Reader) (*domain.Dataset, error) {
-	count, err := s.repos.Dataset.CountByUserID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to count user datasets: %w", err)
-	}
-
-	if count >= s.cfg.Limits.MaxDatasetsPerUser {
-		return nil, fmt.Errorf("dataset limit exceeded: maximum %d datasets allowed", s.cfg.Limits.MaxDatasetsPerUser)
-	}
-
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, content)
 	if err != nil {

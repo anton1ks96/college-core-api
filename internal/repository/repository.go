@@ -14,7 +14,6 @@ type DatasetRepository interface {
 	GetAll(ctx context.Context, offset, limit int) ([]domain.Dataset, int, error)
 	Update(ctx context.Context, dataset *domain.Dataset) error
 	Delete(ctx context.Context, id string) error
-	CountByUserID(ctx context.Context, userID string) (int, error)
 	UpdateIndexedAt(ctx context.Context, id string) error
 }
 

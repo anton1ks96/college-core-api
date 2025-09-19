@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/internal/domain"
 	"github.com/anton1ks96/college-core-api/pkg/logger"
-	"net/http"
 )
 
 type AuthServiceImpl struct {

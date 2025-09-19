@@ -189,19 +189,6 @@ func (r *DatasetMySQLRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *DatasetMySQLRepository) CountByUserID(ctx context.Context, userID string) (int, error) {
-	var count int
-	query := `SELECT COUNT(*) FROM datasets WHERE user_id = ?`
-
-	err := r.db.GetContext(ctx, &count, query, userID)
-	if err != nil {
-		logger.Error(fmt.Errorf("failed to count datasets for user %s: %w", userID, err))
-		return 0, err
-	}
-
-	return count, nil
-}
-
 func (r *DatasetMySQLRepository) UpdateIndexedAt(ctx context.Context, id string) error {
 	now := time.Now()
 	query := `

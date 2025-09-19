@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/anton1ks96/college-core-api/internal/config"
@@ -27,28 +29,58 @@ func NewRAGService(cfg *config.Config) *RAGServiceImpl {
 }
 
 func (s *RAGServiceImpl) IndexDataset(ctx context.Context, datasetID string, title, content string) (int, error) {
-	url := fmt.Sprintf("%s/index", s.cfg.RAGService.URL)
+	url := fmt.Sprintf("%s/index/file", s.cfg.RAGService.URL)
 
-	payload := map[string]interface{}{
-		"dataset_id": datasetID,
-		"title":      title,
-		"text":       content,
-		"overwrite":  true,
-	}
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
 
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		logger.Error(fmt.Errorf("failed to marshal index request: %w", err))
+	if err := writer.WriteField("dataset_id", datasetID); err != nil {
+		logger.Error(fmt.Errorf("failed to write dataset_id field: %w", err))
 		return 0, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if title != "" {
+		if err := writer.WriteField("title", title); err != nil {
+			logger.Error(fmt.Errorf("failed to write title field: %w", err))
+			return 0, err
+		}
+	}
+
+	if err := writer.WriteField("version", "1"); err != nil {
+		logger.Error(fmt.Errorf("failed to write version field: %w", err))
+		return 0, err
+	}
+
+	if err := writer.WriteField("overwrite", "true"); err != nil {
+		logger.Error(fmt.Errorf("failed to write overwrite field: %w", err))
+		return 0, err
+	}
+
+	fileName := fmt.Sprintf("%s.md", datasetID)
+	fileWriter, err := writer.CreateFormFile("file", fileName)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to create form file: %w", err))
+		return 0, err
+	}
+
+	if _, err := io.Copy(fileWriter, bytes.NewReader([]byte(content))); err != nil {
+		logger.Error(fmt.Errorf("failed to write file content: %w", err))
+		return 0, err
+	}
+
+	contentType := writer.FormDataContentType()
+	if err := writer.Close(); err != nil {
+		logger.Error(fmt.Errorf("failed to close multipart writer: %w", err))
+		return 0, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, &requestBody)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to create index request: %w", err))
 		return 0, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", "Bearer "+s.cfg.RAGService.Token)
 
 	resp, err := s.httpClient.Do(req)
@@ -59,6 +91,8 @@ func (s *RAGServiceImpl) IndexDataset(ctx context.Context, datasetID string, tit
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		logger.Error(fmt.Errorf("RAG service returned status %d: %s", resp.StatusCode, string(bodyBytes)))
 		return 0, fmt.Errorf("RAG service returned status %d", resp.StatusCode)
 	}
 

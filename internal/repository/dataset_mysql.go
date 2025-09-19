@@ -193,16 +193,16 @@ func (r *DatasetMySQLRepository) UpdateIndexedAt(ctx context.Context, id string)
 	now := time.Now()
 	query := `
 		UPDATE datasets
-		SET indexed_at = ?
+		SET indexed_at = ?, updated_at = ?
 		WHERE id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, now, id)
+	_, err := r.db.ExecContext(ctx, query, now, now, id)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to update indexed_at for dataset %s: %w", id, err))
 		return err
 	}
 
-	logger.Debug(fmt.Sprintf("dataset %s indexed_at updated", id))
+	logger.Debug(fmt.Sprintf("dataset %s indexed_at and updated_at updated", id))
 	return nil
 }

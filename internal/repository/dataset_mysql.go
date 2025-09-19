@@ -114,7 +114,7 @@ func (r *DatasetMySQLRepository) GetAll(ctx context.Context, offset, limit int) 
 	}
 
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at, is_deleted
+		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at
 		FROM datasets
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
@@ -166,7 +166,7 @@ func (r *DatasetMySQLRepository) Update(ctx context.Context, dataset *domain.Dat
 func (r *DatasetMySQLRepository) Delete(ctx context.Context, id string) error {
 	query := `
 		UPDATE datasets
-		SET is_deleted = true, updated_at = ?
+		SET updated_at = ?
 		WHERE id = ?
 	`
 

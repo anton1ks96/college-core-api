@@ -27,7 +27,21 @@ func NewDatasetService(repos *Repositories, ragService RAGService, cfg *config.C
 	}
 }
 
-func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, content io.Reader) (*domain.Dataset, error) {
+func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignmentID string, content io.Reader) (*domain.Dataset, error) {
+	assignment, err := s.repos.Topic.GetAssignmentByID(ctx, assignmentID)
+	if err != nil {
+		return nil, fmt.Errorf("assignment not found")
+	}
+
+	if assignment.StudentID != userID {
+		return nil, fmt.Errorf("access denied: assignment belongs to another student")
+	}
+
+	topic, err := s.repos.Topic.GetByID(ctx, assignment.TopicID)
+	if err != nil {
+		return nil, fmt.Errorf("topic not found")
+	}
+
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, content)
 	if err != nil {
@@ -38,11 +52,15 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, c
 		return nil, fmt.Errorf("file size exceeds limit: %d > %d bytes", size, s.cfg.Limits.MaxFileSize)
 	}
 
+	fullTitle := fmt.Sprintf("%s - %s", topic.Title, title)
+
 	dataset := &domain.Dataset{
-		ID:       uuid.New().String(),
-		UserID:   userID,
-		Title:    title,
-		FilePath: fmt.Sprintf("students/%s/%s/current.md", userID, uuid.New().String()),
+		ID:           uuid.New().String(),
+		UserID:       userID,
+		Title:        fullTitle,
+		FilePath:     fmt.Sprintf("students/%s/%s/current.md", userID, uuid.New().String()),
+		TopicID:      &assignment.TopicID,
+		AssignmentID: &assignmentID,
 	}
 
 	err = s.repos.File.Upload(ctx, dataset.FilePath, bytes.NewReader(buf.Bytes()), "text/markdown")

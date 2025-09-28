@@ -23,3 +23,13 @@ type FileRepository interface {
 	Delete(ctx context.Context, path string) error
 	Exists(ctx context.Context, path string) (bool, error)
 }
+
+type TopicRepository interface {
+	Create(ctx context.Context, topic *domain.Topic) error
+	GetByID(ctx context.Context, id string) (*domain.Topic, error)
+	GetByCreatorID(ctx context.Context, creatorID string, offset, limit int) ([]domain.Topic, int, error)
+	AddAssignments(ctx context.Context, assignments []domain.TopicAssignment) error
+	GetAssignmentsByStudentID(ctx context.Context, studentID string) ([]domain.TopicAssignment, error)
+	GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error)
+	GetAssignmentByID(ctx context.Context, id string) (*domain.TopicAssignment, error)
+}

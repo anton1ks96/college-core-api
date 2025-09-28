@@ -10,7 +10,7 @@ import (
 )
 
 type DatasetService interface {
-	Create(ctx context.Context, userID, title string, content io.Reader) (*domain.Dataset, error)
+	Create(ctx context.Context, userID, title, assignmentID string, content io.Reader) (*domain.Dataset, error)
 	GetByID(ctx context.Context, datasetID, userID string, role string) (*domain.DatasetResponse, error)
 	GetList(ctx context.Context, userID string, role string, page, limit int) (*domain.DatasetListResponse, error)
 	Update(ctx context.Context, datasetID, userID, title string, content *string) (*domain.Dataset, error)
@@ -28,15 +28,26 @@ type RAGService interface {
 	AskQuestion(ctx context.Context, datasetID string, question string) (*domain.AskResponse, error)
 }
 
+type TopicService interface {
+	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, error)
+	CreateTopic(ctx context.Context, userID, title, description string, studentIDs []string) (*domain.Topic, error)
+	GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error)
+	GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error)
+	AddStudents(ctx context.Context, topicID, userID string, studentIDs []string) error
+	GetTopicStudents(ctx context.Context, topicID, userID string) ([]domain.TopicStudentResponse, error)
+}
+
 type Services struct {
 	Dataset DatasetService
 	Auth    AuthService
 	RAG     RAGService
+	Topic   TopicService
 }
 
 type Repositories struct {
 	Dataset repository.DatasetRepository
 	File    repository.FileRepository
+	Topic   repository.TopicRepository
 }
 
 type Deps struct {
@@ -48,11 +59,13 @@ func NewServices(deps Deps) *Services {
 	authService := NewAuthService(deps.Config)
 	ragService := NewRAGService(deps.Config)
 	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
+	topicService := NewTopicService(deps.Repos, deps.Config)
 
 	return &Services{
 		Dataset: datasetService,
 		Auth:    authService,
 		RAG:     ragService,
+		Topic:   topicService,
 	}
 }
 

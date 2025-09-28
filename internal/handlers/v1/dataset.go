@@ -30,6 +30,15 @@ func (h *Handler) createDataset(c *gin.Context) {
 	}
 	title := titles[0]
 
+	assignmentIDs := form.Value["assignment_id"]
+	if len(assignmentIDs) == 0 || assignmentIDs[0] == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "assignment_id is required",
+		})
+		return
+	}
+	assignmentID := assignmentIDs[0]
+
 	files := form.File["file"]
 	if len(files) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -64,8 +73,20 @@ func (h *Handler) createDataset(c *gin.Context) {
 	}
 	defer src.Close()
 
-	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), title, src)
+	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), title, assignmentID, src)
 	if err != nil {
+		if err.Error() == "assignment not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "assignment not found",
+			})
+			return
+		}
+		if err.Error() == "access denied: assignment belongs to another student" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "access denied: assignment belongs to another student",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})

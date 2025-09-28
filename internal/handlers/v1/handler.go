@@ -32,4 +32,19 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 		datasets.POST("/:id/ask", httpmw.RateLimitMiddleware(h.cfg.Limits.AskRateLimit), h.askQuestion)
 		datasets.POST("/:id/reindex", h.reindexDataset)
 	}
+
+	topics := api.Group("/topics")
+	{
+		topics.POST("", httpmw.RequireRole("teacher", "admin"), h.createTopic)
+		topics.GET("", httpmw.RequireRole("teacher", "admin"), h.getMyTopics)
+		topics.POST("/:id/students", httpmw.RequireRole("teacher", "admin"), h.addStudentsToTopic)
+		topics.GET("/:id/students", httpmw.RequireRole("teacher", "admin"), h.getTopicStudents)
+
+		topics.GET("/assigned", h.getAssignedTopics)
+	}
+
+	students := api.Group("/students")
+	{
+		students.POST("/search", httpmw.RequireRole("teacher", "admin"), h.searchStudents)
+	}
 }

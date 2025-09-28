@@ -33,10 +33,12 @@ func Run() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	topicRepo := repository.NewTopicRepository(cfg, db)
 
 	repos := &services.Repositories{
 		Dataset: datasetRepo,
 		File:    fileRepo,
+		Topic:   topicRepo,
 	}
 
 	servicesInstance := services.NewServices(services.Deps{

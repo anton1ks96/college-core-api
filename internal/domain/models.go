@@ -9,15 +9,17 @@ type User struct {
 }
 
 type Dataset struct {
-	ID        string     `json:"id" db:"id"`
-	UserID    string     `json:"user_id" db:"user_id"`
-	Title     string     `json:"title" db:"title"`
-	FilePath  string     `json:"file_path" db:"file_path"`
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
-	IndexedAt *time.Time `json:"indexed_at" db:"indexed_at"`
-	Content   string     `json:"content,omitempty"`
-	Author    string     `json:"author,omitempty"`
+	ID           string     `json:"id" db:"id"`
+	UserID       string     `json:"user_id" db:"user_id"`
+	Title        string     `json:"title" db:"title"`
+	FilePath     string     `json:"file_path" db:"file_path"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
+	IndexedAt    *time.Time `json:"indexed_at" db:"indexed_at"`
+	TopicID      *string    `json:"topic_id,omitempty" db:"topic_id"`
+	AssignmentID *string    `json:"assignment_id,omitempty" db:"assignment_id"`
+	Content      string     `json:"content,omitempty"`
+	Author       string     `json:"author,omitempty"`
 }
 
 type DatasetListResponse struct {
@@ -44,7 +46,8 @@ type Citation struct {
 }
 
 type CreateDatasetRequest struct {
-	Title string `form:"title" binding:"required"`
+	Title        string `form:"title" binding:"required"`
+	AssignmentID string `form:"assignment_id" binding:"required"`
 }
 
 type UpdateDatasetRequest struct {
@@ -67,4 +70,66 @@ type IndexResponse struct {
 	Success bool   `json:"success"`
 	Chunks  int    `json:"chunks"`
 	Message string `json:"message,omitempty"`
+}
+
+type Topic struct {
+	ID          string    `json:"id" db:"id"`
+	Title       string    `json:"title" db:"title"`
+	Description string    `json:"description" db:"description"`
+	CreatedBy   string    `json:"created_by" db:"created_by"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type TopicAssignment struct {
+	ID         string    `json:"id" db:"id"`
+	TopicID    string    `json:"topic_id" db:"topic_id"`
+	StudentID  string    `json:"student_id" db:"student_id"`
+	AssignedBy string    `json:"assigned_by" db:"assigned_by"`
+	AssignedAt time.Time `json:"assigned_at" db:"assigned_at"`
+}
+
+type StudentInfo struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+}
+
+type CreateTopicRequest struct {
+	Title       string   `json:"title" binding:"required"`
+	Description string   `json:"description"`
+	StudentIDs  []string `json:"student_ids" binding:"required,min=1"`
+}
+
+type AddStudentsRequest struct {
+	StudentIDs []string `json:"student_ids" binding:"required,min=1"`
+}
+
+type SearchStudentsRequest struct {
+	Query string `json:"query" binding:"required"`
+}
+
+type SearchStudentsResponse struct {
+	Students []StudentInfo `json:"students"`
+}
+
+type TopicResponse struct {
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	CreatedBy   string    `json:"created_by"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type AssignedTopicResponse struct {
+	ID           string    `json:"id"`
+	Topic        Topic     `json:"topic"`
+	AssignmentID string    `json:"assignment_id"`
+	AssignedAt   time.Time `json:"assigned_at"`
+}
+
+type TopicStudentResponse struct {
+	ID         string      `json:"id"`
+	Student    StudentInfo `json:"student"`
+	AssignedAt time.Time   `json:"assigned_at"`
 }

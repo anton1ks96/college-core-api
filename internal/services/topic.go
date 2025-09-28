@@ -1,0 +1,231 @@
+package services
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/anton1ks96/college-core-api/internal/config"
+	"github.com/anton1ks96/college-core-api/internal/domain"
+	"github.com/anton1ks96/college-core-api/pkg/logger"
+	"github.com/google/uuid"
+)
+
+type TopicServiceImpl struct {
+	repos      *Repositories
+	cfg        *config.Config
+	httpClient *http.Client
+}
+
+func NewTopicService(repos *Repositories, cfg *config.Config) *TopicServiceImpl {
+	return &TopicServiceImpl{
+		repos: repos,
+		cfg:   cfg,
+		httpClient: &http.Client{
+			Timeout: cfg.AuthService.Timeout,
+		},
+	}
+}
+
+func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, error) {
+	url := fmt.Sprintf("%s/api/v1/students/search", s.cfg.AuthService.URL)
+
+	requestBody := domain.SearchStudentsRequest{
+		Query: query,
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to create request: %w", err))
+		return nil, fmt.Errorf("failed to create search request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to search students: %w", err))
+		return nil, fmt.Errorf("failed to search students")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("auth service returned status %d", resp.StatusCode)
+	}
+
+	var response domain.SearchStudentsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		logger.Error(fmt.Errorf("failed to decode search response: %w", err))
+		return nil, fmt.Errorf("failed to decode search response")
+	}
+
+	return response.Students, nil
+}
+
+func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, title, description string, studentIDs []string) (*domain.Topic, error) {
+	topic := &domain.Topic{
+		Title:       title,
+		Description: description,
+		CreatedBy:   userID,
+	}
+
+	if err := s.repos.Topic.Create(ctx, topic); err != nil {
+		return nil, fmt.Errorf("failed to create topic: %w", err)
+	}
+
+	if len(studentIDs) > 0 {
+		assignments := make([]domain.TopicAssignment, 0, len(studentIDs))
+		now := time.Now()
+
+		for _, studentID := range studentIDs {
+			assignments = append(assignments, domain.TopicAssignment{
+				ID:         uuid.New().String(),
+				TopicID:    topic.ID,
+				StudentID:  studentID,
+				AssignedBy: userID,
+				AssignedAt: now,
+			})
+		}
+
+		if err := s.repos.Topic.AddAssignments(ctx, assignments); err != nil {
+			return nil, fmt.Errorf("failed to assign students: %w", err)
+		}
+	}
+
+	return topic, nil
+}
+
+func (s *TopicServiceImpl) GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	offset := (page - 1) * limit
+
+	topics, total, err := s.repos.Topic.GetByCreatorID(ctx, userID, offset, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get topics: %w", err)
+	}
+
+	return topics, total, nil
+}
+
+func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error) {
+	assignments, err := s.repos.Topic.GetAssignmentsByStudentID(ctx, studentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get assignments: %w", err)
+	}
+
+	result := make([]domain.AssignedTopicResponse, 0, len(assignments))
+
+	for _, assignment := range assignments {
+		topic, err := s.repos.Topic.GetByID(ctx, assignment.TopicID)
+		if err != nil {
+			logger.Error(fmt.Errorf("failed to get topic %s: %w", assignment.TopicID, err))
+			continue
+		}
+
+		result = append(result, domain.AssignedTopicResponse{
+			ID:           assignment.ID,
+			Topic:        *topic,
+			AssignmentID: assignment.ID,
+			AssignedAt:   assignment.AssignedAt,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID string, studentIDs []string) error {
+	topic, err := s.repos.Topic.GetByID(ctx, topicID)
+	if err != nil {
+		return err
+	}
+
+	if topic.CreatedBy != userID {
+		return fmt.Errorf("access denied: only topic creator can add students")
+	}
+
+	if len(studentIDs) == 0 {
+		return fmt.Errorf("student list cannot be empty")
+	}
+
+	existingAssignments, err := s.repos.Topic.GetAssignmentsByTopicID(ctx, topicID)
+	if err != nil {
+		return fmt.Errorf("failed to get existing assignments: %w", err)
+	}
+
+	existingStudents := make(map[string]bool)
+	for _, assignment := range existingAssignments {
+		existingStudents[assignment.StudentID] = true
+	}
+
+	assignments := make([]domain.TopicAssignment, 0)
+	now := time.Now()
+
+	for _, studentID := range studentIDs {
+		if existingStudents[studentID] {
+			continue
+		}
+
+		assignments = append(assignments, domain.TopicAssignment{
+			ID:         uuid.New().String(),
+			TopicID:    topicID,
+			StudentID:  studentID,
+			AssignedBy: userID,
+			AssignedAt: now,
+		})
+	}
+
+	if len(assignments) == 0 {
+		return fmt.Errorf("all specified students are already assigned")
+	}
+
+	if err := s.repos.Topic.AddAssignments(ctx, assignments); err != nil {
+		return fmt.Errorf("failed to add students: %w", err)
+	}
+
+	return nil
+}
+
+func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID string) ([]domain.TopicStudentResponse, error) {
+	topic, err := s.repos.Topic.GetByID(ctx, topicID)
+	if err != nil {
+		return nil, err
+	}
+
+	if topic.CreatedBy != userID {
+		return nil, fmt.Errorf("access denied: only topic creator can view students")
+	}
+
+	assignments, err := s.repos.Topic.GetAssignmentsByTopicID(ctx, topicID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get assignments: %w", err)
+	}
+
+	result := make([]domain.TopicStudentResponse, 0, len(assignments))
+
+	for _, assignment := range assignments {
+		result = append(result, domain.TopicStudentResponse{
+			ID: assignment.ID,
+			Student: domain.StudentInfo{
+				ID:       assignment.StudentID,
+				Username: assignment.StudentID,
+			},
+			AssignedAt: assignment.AssignedAt,
+		})
+	}
+
+	return result, nil
+}

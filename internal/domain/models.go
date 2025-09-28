@@ -110,6 +110,7 @@ type SearchStudentsRequest struct {
 
 type SearchStudentsResponse struct {
 	Students []StudentInfo `json:"students"`
+	Total    int           `json:"total"`
 }
 
 type TopicResponse struct {

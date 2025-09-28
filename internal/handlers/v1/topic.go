@@ -192,7 +192,7 @@ func (h *Handler) searchStudents(c *gin.Context) {
 		return
 	}
 
-	students, err := h.services.Topic.SearchStudents(
+	students, total, err := h.services.Topic.SearchStudents(
 		c.Request.Context(),
 		req.Query,
 	)
@@ -206,5 +206,6 @@ func (h *Handler) searchStudents(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"students": students,
+		"total":    total,
 	})
 }

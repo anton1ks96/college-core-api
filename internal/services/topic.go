@@ -30,7 +30,7 @@ func NewTopicService(repos *Repositories, cfg *config.Config) *TopicServiceImpl 
 	}
 }
 
-func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, error) {
+func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error) {
 	url := fmt.Sprintf("%s/api/v1/students/search", s.cfg.AuthService.URL)
 
 	requestBody := domain.SearchStudentsRequest{
@@ -39,13 +39,13 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, 0, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to create request: %w", err))
-		return nil, fmt.Errorf("failed to create search request")
+		return nil, 0, fmt.Errorf("failed to create search request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -54,21 +54,21 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to search students: %w", err))
-		return nil, fmt.Errorf("failed to search students")
+		return nil, 0, fmt.Errorf("failed to search students")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("auth service returned status %d", resp.StatusCode)
+		return nil, 0, fmt.Errorf("auth service returned status %d", resp.StatusCode)
 	}
 
 	var response domain.SearchStudentsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		logger.Error(fmt.Errorf("failed to decode search response: %w", err))
-		return nil, fmt.Errorf("failed to decode search response")
+		return nil, 0, fmt.Errorf("failed to decode search response")
 	}
 
-	return response.Students, nil
+	return response.Students, response.Total, nil
 }
 
 func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, title, description string, studentIDs []string) (*domain.Topic, error) {

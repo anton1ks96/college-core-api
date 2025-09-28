@@ -29,7 +29,7 @@ type RAGService interface {
 }
 
 type TopicService interface {
-	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, error)
+	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
 	CreateTopic(ctx context.Context, userID, title, description string, studentIDs []string) (*domain.Topic, error)
 	GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error)
 	GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error)

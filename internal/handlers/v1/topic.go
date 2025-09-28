@@ -26,7 +26,7 @@ func (h *Handler) createTopic(c *gin.Context) {
 		userName.(string),
 		req.Title,
 		req.Description,
-		req.StudentIDs,
+		req.Students,
 	)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (h *Handler) addStudentsToTopic(c *gin.Context) {
 		topicID,
 		userID.(string),
 		userName.(string),
-		req.StudentIDs,
+		req.Students,
 	)
 
 	if err != nil {

@@ -120,8 +120,8 @@ func (r *TopicMySQLRepository) AddAssignments(ctx context.Context, assignments [
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO topic_assignments (id, topic_id, student_id, assigned_by, assigned_at)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO topic_assignments (id, topic_id, student_id, student_name, assigned_by, assigned_at)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
 	for _, assignment := range assignments {
@@ -129,6 +129,7 @@ func (r *TopicMySQLRepository) AddAssignments(ctx context.Context, assignments [
 			assignment.ID,
 			assignment.TopicID,
 			assignment.StudentID,
+			assignment.StudentName,
 			assignment.AssignedBy,
 			assignment.AssignedAt,
 		)
@@ -150,7 +151,7 @@ func (r *TopicMySQLRepository) GetAssignmentsByStudentID(ctx context.Context, st
 	var assignments []domain.TopicAssignment
 
 	query := `
-		SELECT id, topic_id, student_id, assigned_by, assigned_at
+		SELECT id, topic_id, student_id, student_name, assigned_by, assigned_at
 		FROM topic_assignments
 		WHERE student_id = ?
 		ORDER BY assigned_at DESC
@@ -169,7 +170,7 @@ func (r *TopicMySQLRepository) GetAssignmentsByTopicID(ctx context.Context, topi
 	var assignments []domain.TopicAssignment
 
 	query := `
-		SELECT id, topic_id, student_id, assigned_by, assigned_at
+		SELECT id, topic_id, student_id, student_name, assigned_by, assigned_at
 		FROM topic_assignments
 		WHERE topic_id = ?
 		ORDER BY assigned_at DESC
@@ -188,7 +189,7 @@ func (r *TopicMySQLRepository) GetAssignmentByID(ctx context.Context, id string)
 	var assignment domain.TopicAssignment
 
 	query := `
-		SELECT id, topic_id, student_id, assigned_by, assigned_at
+		SELECT id, topic_id, student_id, student_name, assigned_by, assigned_at
 		FROM topic_assignments
 		WHERE id = ?
 	`

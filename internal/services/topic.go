@@ -71,7 +71,7 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 	return response.Students, response.Total, nil
 }
 
-func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, title, description string, studentIDs []string) (*domain.Topic, error) {
+func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, title, description string, students []domain.StudentInfo) (*domain.Topic, error) {
 	topic := &domain.Topic{
 		Title:       title,
 		Description: description,
@@ -83,17 +83,18 @@ func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, ti
 		return nil, fmt.Errorf("failed to create topic: %w", err)
 	}
 
-	if len(studentIDs) > 0 {
-		assignments := make([]domain.TopicAssignment, 0, len(studentIDs))
+	if len(students) > 0 {
+		assignments := make([]domain.TopicAssignment, 0, len(students))
 		now := time.Now()
 
-		for _, studentID := range studentIDs {
+		for _, student := range students {
 			assignments = append(assignments, domain.TopicAssignment{
-				ID:         uuid.New().String(),
-				TopicID:    topic.ID,
-				StudentID:  studentID,
-				AssignedBy: userName,
-				AssignedAt: now,
+				ID:          uuid.New().String(),
+				TopicID:     topic.ID,
+				StudentID:   student.ID,
+				StudentName: student.Username,
+				AssignedBy:  userName,
+				AssignedAt:  now,
 			})
 		}
 
@@ -149,7 +150,7 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 	return result, nil
 }
 
-func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, userName string, studentIDs []string) error {
+func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, userName string, students []domain.StudentInfo) error {
 	topic, err := s.repos.Topic.GetByID(ctx, topicID)
 	if err != nil {
 		return err
@@ -159,7 +160,7 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 		return fmt.Errorf("access denied: only topic creator can add students")
 	}
 
-	if len(studentIDs) == 0 {
+	if len(students) == 0 {
 		return fmt.Errorf("student list cannot be empty")
 	}
 
@@ -176,8 +177,8 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 	assignments := make([]domain.TopicAssignment, 0)
 	now := time.Now()
 
-	for _, studentID := range studentIDs {
-		if existingStudents[studentID] {
+	for _, student := range students {
+		if existingStudents[student.ID] {
 			continue
 		}
 
@@ -187,11 +188,12 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 		}
 
 		assignments = append(assignments, domain.TopicAssignment{
-			ID:         id.String(),
-			TopicID:    topicID,
-			StudentID:  studentID,
-			AssignedBy: userName,
-			AssignedAt: now,
+			ID:          id.String(),
+			TopicID:     topicID,
+			StudentID:   student.ID,
+			StudentName: student.Username,
+			AssignedBy:  userName,
+			AssignedAt:  now,
 		})
 	}
 
@@ -228,7 +230,7 @@ func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID
 			ID: assignment.ID,
 			Student: domain.StudentInfo{
 				ID:       assignment.StudentID,
-				Username: assignment.StudentID,
+				Username: assignment.StudentName,
 			},
 			AssignedAt: assignment.AssignedAt,
 		})

@@ -83,11 +83,12 @@ type Topic struct {
 }
 
 type TopicAssignment struct {
-	ID         string    `json:"id" db:"id"`
-	TopicID    string    `json:"topic_id" db:"topic_id"`
-	StudentID  string    `json:"student_id" db:"student_id"`
-	AssignedBy string    `json:"assigned_by" db:"assigned_by"`
-	AssignedAt time.Time `json:"assigned_at" db:"assigned_at"`
+	ID          string    `json:"id" db:"id"`
+	TopicID     string    `json:"topic_id" db:"topic_id"`
+	StudentID   string    `json:"student_id" db:"student_id"`
+	StudentName string    `json:"student_name" db:"student_name"`
+	AssignedBy  string    `json:"assigned_by" db:"assigned_by"`
+	AssignedAt  time.Time `json:"assigned_at" db:"assigned_at"`
 }
 
 type StudentInfo struct {
@@ -96,13 +97,13 @@ type StudentInfo struct {
 }
 
 type CreateTopicRequest struct {
-	Title       string   `json:"title" binding:"required"`
-	Description string   `json:"description"`
-	StudentIDs  []string `json:"student_ids" binding:"required,min=1"`
+	Title       string        `json:"title" binding:"required"`
+	Description string        `json:"description"`
+	Students    []StudentInfo `json:"students" binding:"required,min=1,dive"`
 }
 
 type AddStudentsRequest struct {
-	StudentIDs []string `json:"student_ids" binding:"required,min=1"`
+	Students []StudentInfo `json:"students" binding:"required,min=1,dive"`
 }
 
 type SearchStudentsRequest struct {

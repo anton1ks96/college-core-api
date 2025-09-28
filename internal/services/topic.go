@@ -140,8 +140,15 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 		}
 
 		result = append(result, domain.AssignedTopicResponse{
-			ID:           assignment.ID,
-			Topic:        *topic,
+			ID: assignment.ID,
+			Topic: domain.TopicResponse{
+				ID:          topic.ID,
+				Title:       topic.Title,
+				Description: topic.Description,
+				CreatedBy:   topic.CreatedBy,
+				CreatedAt:   topic.CreatedAt,
+				UpdatedAt:   topic.UpdatedAt,
+			},
 			AssignmentID: assignment.ID,
 			AssignedAt:   assignment.AssignedAt,
 		})

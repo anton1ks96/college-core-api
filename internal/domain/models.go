@@ -125,10 +125,10 @@ type TopicResponse struct {
 }
 
 type AssignedTopicResponse struct {
-	ID           string    `json:"id"`
-	Topic        Topic     `json:"topic"`
-	AssignmentID string    `json:"assignment_id"`
-	AssignedAt   time.Time `json:"assigned_at"`
+	ID           string        `json:"id"`
+	Topic        TopicResponse `json:"topic"`
+	AssignmentID string        `json:"assignment_id"`
+	AssignedAt   time.Time     `json:"assigned_at"`
 }
 
 type TopicStudentResponse struct {

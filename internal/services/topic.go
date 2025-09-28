@@ -49,6 +49,7 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Internal-Token", s.cfg.AuthService.InternalToken)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {

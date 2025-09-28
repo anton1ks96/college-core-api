@@ -45,8 +45,9 @@ type (
 	}
 
 	AuthServiceConfig struct {
-		URL     string
-		Timeout time.Duration
+		URL           string
+		Timeout       time.Duration
+		InternalToken string
 	}
 
 	RAGServiceConfig struct {
@@ -119,6 +120,11 @@ func setFromEnv(cfg *Config) error {
 	cfg.AuthService.URL = os.Getenv("AUTH_SERVICE_URL")
 	if cfg.AuthService.URL == "" {
 		return errors.New("AUTH_SERVICE_URL environment variable is required")
+	}
+
+	cfg.AuthService.InternalToken = os.Getenv("INTERNAL_SERVICE_TOKEN")
+	if cfg.AuthService.InternalToken == "" {
+		return errors.New("INTERNAL_SERVICE_TOKEN environment variable is required")
 	}
 
 	cfg.RAGService.URL = os.Getenv("RAG_SERVICE_URL")

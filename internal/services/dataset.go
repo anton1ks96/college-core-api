@@ -54,11 +54,16 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignme
 
 	fullTitle := fmt.Sprintf("%s - %s", topic.Title, title)
 
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID v7: %w", err)
+	}
+
 	dataset := &domain.Dataset{
-		ID:           uuid.New().String(),
+		ID:           id.String(),
 		UserID:       userID,
 		Title:        fullTitle,
-		FilePath:     fmt.Sprintf("students/%s/%s/current.md", userID, uuid.New().String()),
+		FilePath:     fmt.Sprintf("students/%s/%s/dataset.md", userID, uuid.New().String()),
 		TopicID:      &assignment.TopicID,
 		AssignmentID: &assignmentID,
 	}

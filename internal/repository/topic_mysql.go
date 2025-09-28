@@ -27,20 +27,26 @@ func NewTopicRepository(cfg *config.Config, db *sqlx.DB) *TopicMySQLRepository {
 }
 
 func (r *TopicMySQLRepository) Create(ctx context.Context, topic *domain.Topic) error {
-	topic.ID = uuid.New().String()
+	id, err := uuid.NewV7()
+	if err != nil {
+		return fmt.Errorf("failed to generate UUID v7: %w", err)
+	}
+
+	topic.ID = id.String()
 	topic.CreatedAt = time.Now()
 	topic.UpdatedAt = time.Now()
 
 	query := `
-		INSERT INTO topics (id, title, description, created_by, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO topics (id, title, description, created_by, created_by_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		topic.ID,
 		topic.Title,
 		topic.Description,
 		topic.CreatedBy,
+		topic.CreatedByID,
 		topic.CreatedAt,
 		topic.UpdatedAt,
 	)
@@ -57,7 +63,7 @@ func (r *TopicMySQLRepository) Create(ctx context.Context, topic *domain.Topic) 
 func (r *TopicMySQLRepository) GetByID(ctx context.Context, id string) (*domain.Topic, error) {
 	var topic domain.Topic
 	query := `
-		SELECT id, title, description, created_by, created_at, updated_at
+		SELECT id, title, description, created_by, created_by_id, created_at, updated_at
 		FROM topics
 		WHERE id = ?
 	`
@@ -78,7 +84,7 @@ func (r *TopicMySQLRepository) GetByCreatorID(ctx context.Context, creatorID str
 	var topics []domain.Topic
 	var total int
 
-	countQuery := `SELECT COUNT(*) FROM topics WHERE created_by = ?`
+	countQuery := `SELECT COUNT(*) FROM topics WHERE created_by_id = ?`
 	err := r.db.GetContext(ctx, &total, countQuery, creatorID)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to count topics for creator %s: %w", creatorID, err))
@@ -86,9 +92,9 @@ func (r *TopicMySQLRepository) GetByCreatorID(ctx context.Context, creatorID str
 	}
 
 	query := `
-		SELECT id, title, description, created_by, created_at, updated_at
+		SELECT id, title, description, created_by, created_by, created_at, updated_at
 		FROM topics
-		WHERE created_by = ?
+		WHERE created_by_id = ?
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
 	`

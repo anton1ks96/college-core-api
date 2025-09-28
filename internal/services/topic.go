@@ -71,11 +71,12 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 	return response.Students, response.Total, nil
 }
 
-func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, title, description string, studentIDs []string) (*domain.Topic, error) {
+func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, title, description string, studentIDs []string) (*domain.Topic, error) {
 	topic := &domain.Topic{
 		Title:       title,
 		Description: description,
-		CreatedBy:   userID,
+		CreatedBy:   userName,
+		CreatedByID: userID,
 	}
 
 	if err := s.repos.Topic.Create(ctx, topic); err != nil {
@@ -91,7 +92,7 @@ func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, title, descr
 				ID:         uuid.New().String(),
 				TopicID:    topic.ID,
 				StudentID:  studentID,
-				AssignedBy: userID,
+				AssignedBy: userName,
 				AssignedAt: now,
 			})
 		}
@@ -148,13 +149,13 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 	return result, nil
 }
 
-func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID string, studentIDs []string) error {
+func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, userName string, studentIDs []string) error {
 	topic, err := s.repos.Topic.GetByID(ctx, topicID)
 	if err != nil {
 		return err
 	}
 
-	if topic.CreatedBy != userID {
+	if topic.CreatedByID != userID {
 		return fmt.Errorf("access denied: only topic creator can add students")
 	}
 
@@ -180,11 +181,16 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID stri
 			continue
 		}
 
+		id, err := uuid.NewV7()
+		if err != nil {
+			return fmt.Errorf("failed to generate UUID v7: %w", err)
+		}
+
 		assignments = append(assignments, domain.TopicAssignment{
-			ID:         uuid.New().String(),
+			ID:         id.String(),
 			TopicID:    topicID,
 			StudentID:  studentID,
-			AssignedBy: userID,
+			AssignedBy: userName,
 			AssignedAt: now,
 		})
 	}
@@ -206,7 +212,7 @@ func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID
 		return nil, err
 	}
 
-	if topic.CreatedBy != userID {
+	if topic.CreatedByID != userID {
 		return nil, fmt.Errorf("access denied: only topic creator can view students")
 	}
 

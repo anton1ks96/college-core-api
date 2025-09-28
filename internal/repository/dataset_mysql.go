@@ -27,7 +27,12 @@ func NewDatasetRepository(cfg *config.Config, db *sqlx.DB) *DatasetMySQLReposito
 }
 
 func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dataset) error {
-	dataset.ID = uuid.New().String()
+	id, err := uuid.NewV7()
+	if err != nil {
+		return fmt.Errorf("failed to generate UUID v7: %w", err)
+	}
+
+	dataset.ID = id.String()
 	dataset.CreatedAt = time.Now()
 	dataset.UpdatedAt = time.Now()
 
@@ -36,7 +41,7 @@ func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dat
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		dataset.ID,
 		dataset.UserID,
 		dataset.Title,

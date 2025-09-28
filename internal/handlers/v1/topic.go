@@ -10,6 +10,7 @@ import (
 
 func (h *Handler) createTopic(c *gin.Context) {
 	userID, _ := c.Get("user_id")
+	userName, _ := c.Get("username")
 
 	var req domain.CreateTopicRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -22,6 +23,7 @@ func (h *Handler) createTopic(c *gin.Context) {
 	topic, err := h.services.Topic.CreateTopic(
 		c.Request.Context(),
 		userID.(string),
+		userName.(string),
 		req.Title,
 		req.Description,
 		req.StudentIDs,
@@ -101,6 +103,7 @@ func (h *Handler) addStudentsToTopic(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("user_id")
+	userName, _ := c.Get("username")
 
 	var req domain.AddStudentsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -114,6 +117,7 @@ func (h *Handler) addStudentsToTopic(c *gin.Context) {
 		c.Request.Context(),
 		topicID,
 		userID.(string),
+		userName.(string),
 		req.StudentIDs,
 	)
 

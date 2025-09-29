@@ -37,11 +37,6 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignme
 		return nil, fmt.Errorf("access denied: assignment belongs to another student")
 	}
 
-	topic, err := s.repos.Topic.GetByID(ctx, assignment.TopicID)
-	if err != nil {
-		return nil, fmt.Errorf("topic not found")
-	}
-
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, content)
 	if err != nil {
@@ -52,8 +47,6 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignme
 		return nil, fmt.Errorf("file size exceeds limit: %d > %d bytes", size, s.cfg.Limits.MaxFileSize)
 	}
 
-	fullTitle := fmt.Sprintf("%s - %s", topic.Title, title)
-
 	id, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate UUID v7: %w", err)
@@ -62,7 +55,7 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignme
 	dataset := &domain.Dataset{
 		ID:           id.String(),
 		UserID:       userID,
-		Title:        fullTitle,
+		Title:        title,
 		FilePath:     fmt.Sprintf("students/%s/%s/dataset.md", userID, uuid.New().String()),
 		TopicID:      &assignment.TopicID,
 		AssignmentID: &assignmentID,

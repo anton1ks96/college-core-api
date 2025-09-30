@@ -110,6 +110,40 @@ func (r *DatasetMySQLRepository) GetByUserID(ctx context.Context, userID string,
 	return datasets, total, nil
 }
 
+func (r *DatasetMySQLRepository) GetByTeacherID(ctx context.Context, teacherID string, offset, limit int) ([]domain.Dataset, int, error) {
+	var datasets []domain.Dataset
+	var total int
+
+	countQuery := `
+		SELECT COUNT(DISTINCT d.id)
+		FROM datasets d
+		INNER JOIN topic_assignments ta ON d.assignment_id = ta.id
+		WHERE ta.assigned_by = ?
+	`
+	err := r.db.GetContext(ctx, &total, countQuery, teacherID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to count datasets for teacher %s: %w", teacherID, err))
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id
+		FROM datasets d
+		INNER JOIN topic_assignments ta ON d.assignment_id = ta.id
+		WHERE ta.assigned_by = ?
+		ORDER BY d.created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	err = r.db.SelectContext(ctx, &datasets, query, teacherID, limit, offset)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get datasets for teacher %s: %w", teacherID, err))
+		return nil, 0, err
+	}
+
+	return datasets, total, nil
+}
+
 func (r *DatasetMySQLRepository) GetAll(ctx context.Context, offset, limit int) ([]domain.Dataset, int, error) {
 	var datasets []domain.Dataset
 	var total int

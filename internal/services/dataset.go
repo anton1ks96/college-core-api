@@ -129,8 +129,10 @@ func (s *DatasetServiceImpl) GetList(ctx context.Context, userID string, role st
 	var total int
 	var err error
 
-	if role == "teacher" || role == "admin" {
+	if role == "admin" {
 		datasets, total, err = s.repos.Dataset.GetAll(ctx, offset, limit)
+	} else if role == "teacher" {
+		datasets, total, err = s.repos.Dataset.GetByTeacherID(ctx, userID, offset, limit)
 	} else {
 		datasets, total, err = s.repos.Dataset.GetByUserID(ctx, userID, offset, limit)
 	}

@@ -11,6 +11,7 @@ type DatasetRepository interface {
 	Create(ctx context.Context, dataset *domain.Dataset) error
 	GetByID(ctx context.Context, id string) (*domain.Dataset, error)
 	GetByUserID(ctx context.Context, userID string, offset, limit int) ([]domain.Dataset, int, error)
+	GetByTeacherID(ctx context.Context, teacherID string, offset, limit int) ([]domain.Dataset, int, error)
 	GetAll(ctx context.Context, offset, limit int) ([]domain.Dataset, int, error)
 	Update(ctx context.Context, dataset *domain.Dataset) error
 	Delete(ctx context.Context, id string) error

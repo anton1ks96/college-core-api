@@ -12,6 +12,7 @@ import (
 
 func (h *Handler) createDataset(c *gin.Context) {
 	userID, _ := c.Get("user_id")
+	username, _ := c.Get("username")
 
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -73,7 +74,7 @@ func (h *Handler) createDataset(c *gin.Context) {
 	}
 	defer src.Close()
 
-	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), title, assignmentID, src)
+	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), username.(string), title, assignmentID, src)
 	if err != nil {
 		if err.Error() == "assignment not found" {
 			c.JSON(http.StatusNotFound, gin.H{

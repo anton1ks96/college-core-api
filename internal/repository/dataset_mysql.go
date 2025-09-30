@@ -37,13 +37,14 @@ func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dat
 	dataset.UpdatedAt = time.Now()
 
 	query := `
-		INSERT INTO datasets (id, user_id, title, file_path, created_at, updated_at, topic_id, assignment_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO datasets (id, user_id, author, title, file_path, created_at, updated_at, topic_id, assignment_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err = r.db.ExecContext(ctx, query,
 		dataset.ID,
 		dataset.UserID,
+		dataset.Author,
 		dataset.Title,
 		dataset.FilePath,
 		dataset.CreatedAt,
@@ -64,7 +65,7 @@ func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dat
 func (r *DatasetMySQLRepository) GetByID(ctx context.Context, id string) (*domain.Dataset, error) {
 	var dataset domain.Dataset
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		WHERE id = ?
 	`
@@ -93,7 +94,7 @@ func (r *DatasetMySQLRepository) GetByUserID(ctx context.Context, userID string,
 	}
 
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		WHERE user_id = ?
 		ORDER BY created_at DESC
@@ -121,7 +122,7 @@ func (r *DatasetMySQLRepository) GetAll(ctx context.Context, offset, limit int) 
 	}
 
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?

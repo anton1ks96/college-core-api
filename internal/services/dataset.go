@@ -27,7 +27,7 @@ func NewDatasetService(repos *Repositories, ragService RAGService, cfg *config.C
 	}
 }
 
-func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignmentID string, content io.Reader) (*domain.Dataset, error) {
+func (s *DatasetServiceImpl) Create(ctx context.Context, userID, username, title, assignmentID string, content io.Reader) (*domain.Dataset, error) {
 	assignment, err := s.repos.Topic.GetAssignmentByID(ctx, assignmentID)
 	if err != nil {
 		return nil, fmt.Errorf("assignment not found")
@@ -55,6 +55,7 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title, assignme
 	dataset := &domain.Dataset{
 		ID:           id.String(),
 		UserID:       userID,
+		Author:       username,
 		Title:        title,
 		FilePath:     fmt.Sprintf("students/%s/%s/dataset.md", userID, uuid.New().String()),
 		TopicID:      &assignment.TopicID,
@@ -105,7 +106,7 @@ func (s *DatasetServiceImpl) GetByID(ctx context.Context, datasetID, userID stri
 		ID:        dataset.ID,
 		Title:     dataset.Title,
 		Content:   string(content),
-		Author:    dataset.UserID, // TODO: получать имя пользователя из auth-svc
+		Author:    dataset.Author,
 		UserID:    dataset.UserID,
 		CreatedAt: dataset.CreatedAt,
 		UpdatedAt: dataset.UpdatedAt,

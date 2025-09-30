@@ -10,7 +10,7 @@ import (
 )
 
 type DatasetService interface {
-	Create(ctx context.Context, userID, title, assignmentID string, content io.Reader) (*domain.Dataset, error)
+	Create(ctx context.Context, userID, username, title, assignmentID string, content io.Reader) (*domain.Dataset, error)
 	GetByID(ctx context.Context, datasetID, userID string, role string) (*domain.DatasetResponse, error)
 	GetList(ctx context.Context, userID string, role string, page, limit int) (*domain.DatasetListResponse, error)
 	Update(ctx context.Context, datasetID, userID, title string, content *string) (*domain.Dataset, error)

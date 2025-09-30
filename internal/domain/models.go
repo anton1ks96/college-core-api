@@ -11,6 +11,7 @@ type User struct {
 type Dataset struct {
 	ID           string     `json:"id" db:"id"`
 	UserID       string     `json:"user_id" db:"user_id"`
+	Author       string     `json:"author,omitempty" db:"author"`
 	Title        string     `json:"title" db:"title"`
 	FilePath     string     `json:"file_path" db:"file_path"`
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
@@ -19,7 +20,6 @@ type Dataset struct {
 	TopicID      *string    `json:"topic_id,omitempty" db:"topic_id"`
 	AssignmentID *string    `json:"assignment_id,omitempty" db:"assignment_id"`
 	Content      string     `json:"content,omitempty"`
-	Author       string     `json:"author,omitempty"`
 }
 
 type DatasetListResponse struct {

@@ -139,6 +139,12 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 			continue
 		}
 
+		hasDataset, err := s.repos.Dataset.ExistsByUserIDAndTopicID(ctx, studentID, assignment.TopicID)
+		if err != nil {
+			logger.Error(fmt.Errorf("failed to check dataset existence for topic %s: %w", assignment.TopicID, err))
+			hasDataset = false
+		}
+
 		result = append(result, domain.AssignedTopicResponse{
 			ID: assignment.ID,
 			Topic: domain.TopicResponse{
@@ -151,6 +157,7 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 			},
 			AssignmentID: assignment.ID,
 			AssignedAt:   assignment.AssignedAt,
+			HasDataset:   hasDataset,
 		})
 	}
 

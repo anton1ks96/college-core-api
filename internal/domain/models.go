@@ -129,6 +129,7 @@ type AssignedTopicResponse struct {
 	Topic        TopicResponse `json:"topic"`
 	AssignmentID string        `json:"assignment_id"`
 	AssignedAt   time.Time     `json:"assigned_at"`
+	HasDataset   bool          `json:"has_dataset"`
 }
 
 type TopicStudentResponse struct {

@@ -37,6 +37,15 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, username, title
 		return nil, fmt.Errorf("access denied: assignment belongs to another student")
 	}
 
+	exists, err := s.repos.Dataset.ExistsByUserIDAndTopicID(ctx, userID, assignment.TopicID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing dataset: %w", err)
+	}
+
+	if exists {
+		return nil, fmt.Errorf("dataset already exists for this topic")
+	}
+
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, content)
 	if err != nil {

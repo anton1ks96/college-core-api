@@ -88,6 +88,12 @@ func (h *Handler) createDataset(c *gin.Context) {
 			})
 			return
 		}
+		if err.Error() == "dataset already exists for this topic" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "dataset already exists for this topic",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})

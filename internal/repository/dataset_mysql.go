@@ -248,3 +248,20 @@ func (r *DatasetMySQLRepository) UpdateIndexedAt(ctx context.Context, id string)
 	logger.Debug(fmt.Sprintf("dataset %s indexed_at and updated_at updated", id))
 	return nil
 }
+
+func (r *DatasetMySQLRepository) ExistsByUserIDAndTopicID(ctx context.Context, userID, topicID string) (bool, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM datasets
+		WHERE user_id = ? AND topic_id = ?
+	`
+
+	err := r.db.GetContext(ctx, &count, query, userID, topicID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to check dataset existence for user %s and topic %s: %w", userID, topicID, err))
+		return false, err
+	}
+
+	return count > 0, nil
+}

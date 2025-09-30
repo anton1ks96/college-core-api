@@ -16,6 +16,7 @@ type DatasetRepository interface {
 	Update(ctx context.Context, dataset *domain.Dataset) error
 	Delete(ctx context.Context, id string) error
 	UpdateIndexedAt(ctx context.Context, id string) error
+	ExistsByUserIDAndTopicID(ctx context.Context, userID, topicID string) (bool, error)
 }
 
 type FileRepository interface {

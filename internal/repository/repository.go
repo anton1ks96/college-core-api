@@ -32,6 +32,7 @@ type TopicRepository interface {
 	GetByCreatorID(ctx context.Context, creatorID string, offset, limit int) ([]domain.Topic, int, error)
 	AddAssignments(ctx context.Context, assignments []domain.TopicAssignment) error
 	GetAssignmentsByStudentID(ctx context.Context, studentID string) ([]domain.TopicAssignment, error)
+	GetAssignmentsWithDetailsByStudentID(ctx context.Context, studentID string) ([]domain.AssignmentWithDetails, error)
 	GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error)
 	GetAssignmentByID(ctx context.Context, id string) (*domain.TopicAssignment, error)
 }

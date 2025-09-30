@@ -166,6 +166,37 @@ func (r *TopicMySQLRepository) GetAssignmentsByStudentID(ctx context.Context, st
 	return assignments, nil
 }
 
+func (r *TopicMySQLRepository) GetAssignmentsWithDetailsByStudentID(ctx context.Context, studentID string) ([]domain.AssignmentWithDetails, error) {
+	var results []domain.AssignmentWithDetails
+
+	query := `
+		SELECT
+			ta.id as assignment_id,
+			ta.topic_id,
+			ta.student_id,
+			ta.assigned_at,
+			t.title as topic_title,
+			t.description,
+			t.created_by,
+			t.created_at as topic_created_at,
+			t.updated_at as topic_updated_at,
+			CASE WHEN d.id IS NOT NULL THEN 1 ELSE 0 END as has_dataset
+		FROM topic_assignments ta
+		INNER JOIN topics t ON ta.topic_id = t.id
+		LEFT JOIN datasets d ON d.user_id = ta.student_id AND d.topic_id = ta.topic_id
+		WHERE ta.student_id = ?
+		ORDER BY ta.assigned_at DESC
+	`
+
+	err := r.db.SelectContext(ctx, &results, query, studentID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get assignments with details for student %s: %w", studentID, err))
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func (r *TopicMySQLRepository) GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error) {
 	var assignments []domain.TopicAssignment
 

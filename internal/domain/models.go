@@ -137,3 +137,16 @@ type TopicStudentResponse struct {
 	Student    StudentInfo `json:"student"`
 	AssignedAt time.Time   `json:"assigned_at"`
 }
+
+type AssignmentWithDetails struct {
+	AssignmentID string    `db:"assignment_id"`
+	TopicID      string    `db:"topic_id"`
+	StudentID    string    `db:"student_id"`
+	AssignedAt   time.Time `db:"assigned_at"`
+	TopicTitle   string    `db:"topic_title"`
+	Description  string    `db:"description"`
+	CreatedBy    string    `db:"created_by"`
+	TopicCreated time.Time `db:"topic_created_at"`
+	TopicUpdated time.Time `db:"topic_updated_at"`
+	HasDataset   bool      `db:"has_dataset"`
+}

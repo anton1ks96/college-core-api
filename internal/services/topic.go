@@ -125,39 +125,27 @@ func (s *TopicServiceImpl) GetMyTopics(ctx context.Context, userID string, page,
 }
 
 func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error) {
-	assignments, err := s.repos.Topic.GetAssignmentsByStudentID(ctx, studentID)
+	details, err := s.repos.Topic.GetAssignmentsWithDetailsByStudentID(ctx, studentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get assignments: %w", err)
 	}
 
-	result := make([]domain.AssignedTopicResponse, 0, len(assignments))
+	result := make([]domain.AssignedTopicResponse, 0, len(details))
 
-	for _, assignment := range assignments {
-		topic, err := s.repos.Topic.GetByID(ctx, assignment.TopicID)
-		if err != nil {
-			logger.Error(fmt.Errorf("failed to get topic %s: %w", assignment.TopicID, err))
-			continue
-		}
-
-		hasDataset, err := s.repos.Dataset.ExistsByUserIDAndTopicID(ctx, studentID, assignment.TopicID)
-		if err != nil {
-			logger.Error(fmt.Errorf("failed to check dataset existence for topic %s: %w", assignment.TopicID, err))
-			hasDataset = false
-		}
-
+	for _, detail := range details {
 		result = append(result, domain.AssignedTopicResponse{
-			ID: assignment.ID,
+			ID: detail.AssignmentID,
 			Topic: domain.TopicResponse{
-				ID:          topic.ID,
-				Title:       topic.Title,
-				Description: topic.Description,
-				CreatedBy:   topic.CreatedBy,
-				CreatedAt:   topic.CreatedAt,
-				UpdatedAt:   topic.UpdatedAt,
+				ID:          detail.TopicID,
+				Title:       detail.TopicTitle,
+				Description: detail.Description,
+				CreatedBy:   detail.CreatedBy,
+				CreatedAt:   detail.TopicCreated,
+				UpdatedAt:   detail.TopicUpdated,
 			},
-			AssignmentID: assignment.ID,
-			AssignedAt:   assignment.AssignedAt,
-			HasDataset:   hasDataset,
+			AssignmentID: detail.AssignmentID,
+			AssignedAt:   detail.AssignedAt,
+			HasDataset:   detail.HasDataset,
 		})
 	}
 

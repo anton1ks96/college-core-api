@@ -34,8 +34,8 @@ type TopicService interface {
 	GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error)
 	GetAllTopics(ctx context.Context, page, limit int) ([]domain.Topic, int, error)
 	GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error)
-	AddStudents(ctx context.Context, topicID, userID, userName string, students []domain.StudentInfo) error
-	GetTopicStudents(ctx context.Context, topicID, userID string) ([]domain.TopicStudentResponse, error)
+	AddStudents(ctx context.Context, topicID, userID, userName, role string, students []domain.StudentInfo) error
+	GetTopicStudents(ctx context.Context, topicID, userID, role string) ([]domain.TopicStudentResponse, error)
 }
 
 type Services struct {

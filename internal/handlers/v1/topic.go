@@ -129,6 +129,7 @@ func (h *Handler) addStudentsToTopic(c *gin.Context) {
 
 	userID, _ := c.Get("user_id")
 	userName, _ := c.Get("username")
+	role, _ := c.Get("role")
 
 	var req domain.AddStudentsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -143,6 +144,7 @@ func (h *Handler) addStudentsToTopic(c *gin.Context) {
 		topicID,
 		userID.(string),
 		userName.(string),
+		role.(string),
 		req.Students,
 	)
 
@@ -181,11 +183,13 @@ func (h *Handler) getTopicStudents(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
 
 	students, err := h.services.Topic.GetTopicStudents(
 		c.Request.Context(),
 		topicID,
 		userID.(string),
+		role.(string),
 	)
 
 	if err != nil {

@@ -170,14 +170,14 @@ func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID stri
 	return result, nil
 }
 
-func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, userName string, students []domain.StudentInfo) error {
+func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, userName, role string, students []domain.StudentInfo) error {
 	topic, err := s.repos.Topic.GetByID(ctx, topicID)
 	if err != nil {
 		return err
 	}
 
-	if topic.CreatedByID != userID {
-		return fmt.Errorf("access denied: only topic creator can add students")
+	if role != "admin" && role != "teacher" && topic.CreatedByID != userID {
+		return fmt.Errorf("access denied: only topic creator or admin can add students")
 	}
 
 	if len(students) == 0 {
@@ -228,14 +228,14 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 	return nil
 }
 
-func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID string) ([]domain.TopicStudentResponse, error) {
+func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID, role string) ([]domain.TopicStudentResponse, error) {
 	topic, err := s.repos.Topic.GetByID(ctx, topicID)
 	if err != nil {
 		return nil, err
 	}
 
-	if topic.CreatedByID != userID {
-		return nil, fmt.Errorf("access denied: only topic creator can view students")
+	if role != "admin" && role != "teacher" && topic.CreatedByID != userID {
+		return nil, fmt.Errorf("access denied: only topic creator or admin can view students")
 	}
 
 	assignments, err := s.repos.Topic.GetAssignmentsByTopicID(ctx, topicID)

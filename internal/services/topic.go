@@ -124,6 +124,24 @@ func (s *TopicServiceImpl) GetMyTopics(ctx context.Context, userID string, page,
 	return topics, total, nil
 }
 
+func (s *TopicServiceImpl) GetAllTopics(ctx context.Context, page, limit int) ([]domain.Topic, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	offset := (page - 1) * limit
+
+	topics, total, err := s.repos.Topic.GetAll(ctx, offset, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get all topics: %w", err)
+	}
+
+	return topics, total, nil
+}
+
 func (s *TopicServiceImpl) GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error) {
 	details, err := s.repos.Topic.GetAssignmentsWithDetailsByStudentID(ctx, studentID)
 	if err != nil {

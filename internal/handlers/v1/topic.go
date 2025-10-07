@@ -73,6 +73,31 @@ func (h *Handler) getMyTopics(c *gin.Context) {
 	})
 }
 
+func (h *Handler) getAllTopics(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	topics, total, err := h.services.Topic.GetAllTopics(
+		c.Request.Context(),
+		page,
+		limit,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"topics": topics,
+		"total":  total,
+		"page":   page,
+		"limit":  limit,
+	})
+}
+
 func (h *Handler) getAssignedTopics(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 

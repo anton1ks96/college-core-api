@@ -108,6 +108,33 @@ func (r *TopicMySQLRepository) GetByCreatorID(ctx context.Context, creatorID str
 	return topics, total, nil
 }
 
+func (r *TopicMySQLRepository) GetAll(ctx context.Context, offset, limit int) ([]domain.Topic, int, error) {
+	var topics []domain.Topic
+	var total int
+
+	countQuery := `SELECT COUNT(*) FROM topics`
+	err := r.db.GetContext(ctx, &total, countQuery)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to count all topics: %w", err))
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT id, title, description, created_by, created_by_id, created_at, updated_at
+		FROM topics
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	err = r.db.SelectContext(ctx, &topics, query, limit, offset)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get all topics: %w", err))
+		return nil, 0, err
+	}
+
+	return topics, total, nil
+}
+
 func (r *TopicMySQLRepository) AddAssignments(ctx context.Context, assignments []domain.TopicAssignment) error {
 	if len(assignments) == 0 {
 		return nil

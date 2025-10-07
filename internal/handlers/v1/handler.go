@@ -37,6 +37,7 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 	{
 		topics.POST("", httpmw.RequireRole("teacher", "admin"), h.createTopic)
 		topics.GET("", httpmw.RequireRole("teacher", "admin"), h.getMyTopics)
+		topics.GET("/all", httpmw.RequireRole("admin"), h.getAllTopics)
 		topics.POST("/:id/students", httpmw.RequireRole("teacher", "admin"), h.addStudentsToTopic)
 		topics.GET("/:id/students", httpmw.RequireRole("teacher", "admin"), h.getTopicStudents)
 

@@ -71,6 +71,47 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 	return response.Students, response.Total, nil
 }
 
+func (s *TopicServiceImpl) SearchTeachers(ctx context.Context, query string) ([]domain.StudentInfo, int, error) {
+	url := fmt.Sprintf("%s/api/v1/teachers/search", s.cfg.AuthService.URL)
+
+	requestBody := domain.SearchStudentsRequest{
+		Query: query,
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to create request: %w", err))
+		return nil, 0, fmt.Errorf("failed to create search request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Internal-Token", s.cfg.AuthService.InternalToken)
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to search students: %w", err))
+		return nil, 0, fmt.Errorf("failed to search students")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("auth service returned status %d", resp.StatusCode)
+	}
+
+	var response domain.SearchStudentsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		logger.Error(fmt.Errorf("failed to decode search response: %w", err))
+		return nil, 0, fmt.Errorf("failed to decode search response")
+	}
+
+	return response.Students, response.Total, nil
+}
+
 func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, title, description string, students []domain.StudentInfo) (*domain.Topic, error) {
 	topic := &domain.Topic{
 		Title:       title,
@@ -176,7 +217,7 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 		return err
 	}
 
-	if role != "admin" && role != "teacher" && topic.CreatedByID != userID {
+	if role != "admin" && topic.CreatedByID != userID {
 		return fmt.Errorf("access denied: only topic creator or admin can add students")
 	}
 
@@ -234,7 +275,7 @@ func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID
 		return nil, err
 	}
 
-	if role != "admin" && role != "teacher" && topic.CreatedByID != userID {
+	if role != "admin" && topic.CreatedByID != userID {
 		return nil, fmt.Errorf("access denied: only topic creator or admin can view students")
 	}
 

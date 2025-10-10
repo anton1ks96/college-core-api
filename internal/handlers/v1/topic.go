@@ -242,3 +242,30 @@ func (h *Handler) searchStudents(c *gin.Context) {
 		"total":    total,
 	})
 }
+
+func (h *Handler) searchTeachers(c *gin.Context) {
+	var req domain.SearchStudentsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	teachers, total, err := h.services.Topic.SearchTeachers(
+		c.Request.Context(),
+		req.Query,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"teachers": teachers,
+		"total":    total,
+	})
+}

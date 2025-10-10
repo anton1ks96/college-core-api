@@ -37,3 +37,10 @@ type TopicRepository interface {
 	GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error)
 	GetAssignmentByID(ctx context.Context, id string) (*domain.TopicAssignment, error)
 }
+
+type DatasetPermissionRepository interface {
+	GrantPermission(ctx context.Context, permission *domain.DatasetPermission) error
+	RevokePermission(ctx context.Context, datasetID, teacherID string) error
+	GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
+	HasPermission(ctx context.Context, datasetID, teacherID string) (bool, error)
+}

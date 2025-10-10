@@ -117,25 +117,27 @@ func (r *DatasetMySQLRepository) GetByTeacherID(ctx context.Context, teacherID s
 	countQuery := `
 		SELECT COUNT(DISTINCT d.id)
 		FROM datasets d
-		INNER JOIN topic_assignments ta ON d.assignment_id = ta.id
-		WHERE ta.assigned_by = ?
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE ta.id IS NOT NULL OR dp.id IS NOT NULL
 	`
-	err := r.db.GetContext(ctx, &total, countQuery, teacherID)
+	err := r.db.GetContext(ctx, &total, countQuery, teacherID, teacherID)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to count datasets for teacher %s: %w", teacherID, err))
 		return nil, 0, err
 	}
 
 	query := `
-		SELECT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id
+		SELECT DISTINCT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id
 		FROM datasets d
-		INNER JOIN topic_assignments ta ON d.assignment_id = ta.id
-		WHERE ta.assigned_by = ?
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE ta.id IS NOT NULL OR dp.id IS NOT NULL
 		ORDER BY d.created_at DESC
 		LIMIT ? OFFSET ?
 	`
 
-	err = r.db.SelectContext(ctx, &datasets, query, teacherID, limit, offset)
+	err = r.db.SelectContext(ctx, &datasets, query, teacherID, teacherID, limit, offset)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to get datasets for teacher %s: %w", teacherID, err))
 		return nil, 0, err

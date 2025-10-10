@@ -34,11 +34,13 @@ func Run() {
 		logger.Fatal(err)
 	}
 	topicRepo := repository.NewTopicRepository(cfg, db)
+	datasetPermissionRepo := repository.NewDatasetPermissionRepository(cfg, db)
 
 	repos := &services.Repositories{
-		Dataset: datasetRepo,
-		File:    fileRepo,
-		Topic:   topicRepo,
+		Dataset:           datasetRepo,
+		File:              fileRepo,
+		Topic:             topicRepo,
+		DatasetPermission: datasetPermissionRepo,
 	}
 
 	servicesInstance := services.NewServices(services.Deps{
@@ -58,7 +60,7 @@ func Run() {
 		}
 	}()
 
-	logger.Info(fmt.Sprintf("college-core-api started on port %s", cfg.Server.Port))
+	logger.Info(fmt.Sprintf("College Core API started - PORT: %s", cfg.Server.Port))
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

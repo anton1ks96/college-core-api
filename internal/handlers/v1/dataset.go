@@ -369,3 +369,128 @@ func isMarkdownFile(filename string) bool {
 	return len(filename) > 3 && (filename[len(filename)-3:] == ".md" ||
 		(len(filename) > 9 && filename[len(filename)-9:] == ".markdown"))
 }
+
+func (h *Handler) grantDatasetPermission(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	userName, _ := c.Get("username")
+
+	var req domain.GrantPermissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	permissionID, err := h.services.DatasetPermission.GrantDatasetPermission(
+		c.Request.Context(),
+		datasetID,
+		req.TeacherID,
+		req.TeacherName,
+		userName.(string),
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "permission already exists" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "permission already exists",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":      permissionID,
+		"message": "Access granted successfully",
+	})
+}
+
+func (h *Handler) revokeDatasetPermission(c *gin.Context) {
+	datasetID := c.Param("id")
+	teacherID := c.Param("teacher_id")
+
+	if datasetID == "" || teacherID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id and teacher id are required",
+		})
+		return
+	}
+
+	err := h.services.DatasetPermission.RevokeDatasetPermission(
+		c.Request.Context(),
+		datasetID,
+		teacherID,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "failed to revoke permission: permission not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "permission not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Access revoked successfully",
+	})
+}
+
+func (h *Handler) getDatasetPermissions(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	permissions, err := h.services.DatasetPermission.GetDatasetPermissions(
+		c.Request.Context(),
+		datasetID,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"permissions": permissions,
+	})
+}

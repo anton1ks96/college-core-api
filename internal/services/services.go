@@ -30,6 +30,7 @@ type RAGService interface {
 
 type TopicService interface {
 	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
+	SearchTeachers(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
 	CreateTopic(ctx context.Context, userID, userName, title, description string, students []domain.StudentInfo) (*domain.Topic, error)
 	GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error)
 	GetAllTopics(ctx context.Context, page, limit int) ([]domain.Topic, int, error)
@@ -38,17 +39,25 @@ type TopicService interface {
 	GetTopicStudents(ctx context.Context, topicID, userID, role string) ([]domain.TopicStudentResponse, error)
 }
 
+type DatasetPermissionService interface {
+	GrantDatasetPermission(ctx context.Context, datasetID, teacherID, teacherName, grantedBy string) (string, error)
+	RevokeDatasetPermission(ctx context.Context, datasetID, teacherID string) error
+	GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.PermissionResponse, error)
+}
+
 type Services struct {
-	Dataset DatasetService
-	Auth    AuthService
-	RAG     RAGService
-	Topic   TopicService
+	Dataset           DatasetService
+	Auth              AuthService
+	RAG               RAGService
+	Topic             TopicService
+	DatasetPermission DatasetPermissionService
 }
 
 type Repositories struct {
-	Dataset repository.DatasetRepository
-	File    repository.FileRepository
-	Topic   repository.TopicRepository
+	Dataset           repository.DatasetRepository
+	File              repository.FileRepository
+	Topic             repository.TopicRepository
+	DatasetPermission repository.DatasetPermissionRepository
 }
 
 type Deps struct {
@@ -61,17 +70,19 @@ func NewServices(deps Deps) *Services {
 	ragService := NewRAGService(deps.Config)
 	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
 	topicService := NewTopicService(deps.Repos, deps.Config)
+	datasetPermissionService := NewDatasetPermissionService(deps.Repos)
 
 	return &Services{
-		Dataset: datasetService,
-		Auth:    authService,
-		RAG:     ragService,
-		Topic:   topicService,
+		Dataset:           datasetService,
+		Auth:              authService,
+		RAG:               ragService,
+		Topic:             topicService,
+		DatasetPermission: datasetPermissionService,
 	}
 }
 
 func checkPermission(userID, ownerID, role string) bool {
-	if role == "teacher" {
+	if role == "admin" || role == "teacher" {
 		return true
 	}
 	return userID == ownerID

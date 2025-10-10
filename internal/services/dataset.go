@@ -96,13 +96,34 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, username, title
 	return dataset, nil
 }
 
+func (s *DatasetServiceImpl) hasReadAccess(ctx context.Context, datasetID, userID, ownerID, role string) (bool, error) {
+	if role == "admin" {
+		return true, nil
+	}
+	if userID == ownerID {
+		return true, nil
+	}
+	if role == "teacher" {
+		hasPermission, err := s.repos.DatasetPermission.HasPermission(ctx, datasetID, userID)
+		if err != nil {
+			return false, fmt.Errorf("failed to check permission: %w", err)
+		}
+		return hasPermission, nil
+	}
+	return false, nil
+}
+
 func (s *DatasetServiceImpl) GetByID(ctx context.Context, datasetID, userID string, role string) (*domain.DatasetResponse, error) {
 	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !checkPermission(userID, dataset.UserID, role) {
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
 		return nil, fmt.Errorf("access denied")
 	}
 
@@ -210,7 +231,11 @@ func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID,
 		return nil, err
 	}
 
-	if !checkPermission(userID, dataset.UserID, role) {
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
 		return nil, fmt.Errorf("access denied")
 	}
 

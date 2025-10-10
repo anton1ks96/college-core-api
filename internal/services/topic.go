@@ -31,7 +31,7 @@ func NewTopicService(repos *Repositories, cfg *config.Config) *TopicServiceImpl 
 }
 
 func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error) {
-	url := fmt.Sprintf("%s/api/v1/students/search", s.cfg.AuthService.URL)
+	url := fmt.Sprintf("%s/api/v1/search/students", s.cfg.AuthService.URL)
 
 	requestBody := domain.SearchStudentsRequest{
 		Query: query,
@@ -72,7 +72,7 @@ func (s *TopicServiceImpl) SearchStudents(ctx context.Context, query string) ([]
 }
 
 func (s *TopicServiceImpl) SearchTeachers(ctx context.Context, query string) ([]domain.StudentInfo, int, error) {
-	url := fmt.Sprintf("%s/api/v1/teachers/search", s.cfg.AuthService.URL)
+	url := fmt.Sprintf("%s/api/v1/search/teachers", s.cfg.AuthService.URL)
 
 	requestBody := domain.SearchStudentsRequest{
 		Query: query,

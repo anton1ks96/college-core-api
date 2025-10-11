@@ -11,10 +11,12 @@ type DatasetRepository interface {
 	Create(ctx context.Context, dataset *domain.Dataset) error
 	GetByID(ctx context.Context, id string) (*domain.Dataset, error)
 	GetByUserID(ctx context.Context, userID string, offset, limit int) ([]domain.Dataset, int, error)
+	GetByTeacherID(ctx context.Context, teacherID string, offset, limit int) ([]domain.Dataset, int, error)
 	GetAll(ctx context.Context, offset, limit int) ([]domain.Dataset, int, error)
 	Update(ctx context.Context, dataset *domain.Dataset) error
 	Delete(ctx context.Context, id string) error
 	UpdateIndexedAt(ctx context.Context, id string) error
+	ExistsByUserIDAndTopicID(ctx context.Context, userID, topicID string) (bool, error)
 }
 
 type FileRepository interface {
@@ -22,4 +24,23 @@ type FileRepository interface {
 	Download(ctx context.Context, path string) ([]byte, error)
 	Delete(ctx context.Context, path string) error
 	Exists(ctx context.Context, path string) (bool, error)
+}
+
+type TopicRepository interface {
+	Create(ctx context.Context, topic *domain.Topic) error
+	GetByID(ctx context.Context, id string) (*domain.Topic, error)
+	GetByCreatorID(ctx context.Context, creatorID string, offset, limit int) ([]domain.Topic, int, error)
+	GetAll(ctx context.Context, offset, limit int) ([]domain.Topic, int, error)
+	AddAssignments(ctx context.Context, assignments []domain.TopicAssignment) error
+	GetAssignmentsByStudentID(ctx context.Context, studentID string) ([]domain.TopicAssignment, error)
+	GetAssignmentsWithDetailsByStudentID(ctx context.Context, studentID string) ([]domain.AssignmentWithDetails, error)
+	GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error)
+	GetAssignmentByID(ctx context.Context, id string) (*domain.TopicAssignment, error)
+}
+
+type DatasetPermissionRepository interface {
+	GrantPermission(ctx context.Context, permission *domain.DatasetPermission) error
+	RevokePermission(ctx context.Context, datasetID, teacherID string) error
+	HasPermission(ctx context.Context, datasetID, teacherID string) (bool, error)
+	GetAllPermissions(ctx context.Context, offset, limit int) ([]domain.DatasetPermission, int, error)
 }

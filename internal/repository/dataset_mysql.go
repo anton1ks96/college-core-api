@@ -27,22 +27,30 @@ func NewDatasetRepository(cfg *config.Config, db *sqlx.DB) *DatasetMySQLReposito
 }
 
 func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dataset) error {
-	dataset.ID = uuid.New().String()
+	id, err := uuid.NewV7()
+	if err != nil {
+		return fmt.Errorf("failed to generate UUID v7: %w", err)
+	}
+
+	dataset.ID = id.String()
 	dataset.CreatedAt = time.Now()
 	dataset.UpdatedAt = time.Now()
 
 	query := `
-		INSERT INTO datasets (id, user_id, title, file_path, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO datasets (id, user_id, author, title, file_path, created_at, updated_at, topic_id, assignment_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		dataset.ID,
 		dataset.UserID,
+		dataset.Author,
 		dataset.Title,
 		dataset.FilePath,
 		dataset.CreatedAt,
 		dataset.UpdatedAt,
+		dataset.TopicID,
+		dataset.AssignmentID,
 	)
 
 	if err != nil {
@@ -57,7 +65,7 @@ func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dat
 func (r *DatasetMySQLRepository) GetByID(ctx context.Context, id string) (*domain.Dataset, error) {
 	var dataset domain.Dataset
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		WHERE id = ?
 	`
@@ -86,7 +94,7 @@ func (r *DatasetMySQLRepository) GetByUserID(ctx context.Context, userID string,
 	}
 
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		WHERE user_id = ?
 		ORDER BY created_at DESC
@@ -96,6 +104,42 @@ func (r *DatasetMySQLRepository) GetByUserID(ctx context.Context, userID string,
 	err = r.db.SelectContext(ctx, &datasets, query, userID, limit, offset)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to get datasets for user %s: %w", userID, err))
+		return nil, 0, err
+	}
+
+	return datasets, total, nil
+}
+
+func (r *DatasetMySQLRepository) GetByTeacherID(ctx context.Context, teacherID string, offset, limit int) ([]domain.Dataset, int, error) {
+	var datasets []domain.Dataset
+	var total int
+
+	countQuery := `
+		SELECT COUNT(DISTINCT d.id)
+		FROM datasets d
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE ta.id IS NOT NULL OR dp.id IS NOT NULL
+	`
+	err := r.db.GetContext(ctx, &total, countQuery, teacherID, teacherID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to count datasets for teacher %s: %w", teacherID, err))
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT DISTINCT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id
+		FROM datasets d
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE ta.id IS NOT NULL OR dp.id IS NOT NULL
+		ORDER BY d.created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	err = r.db.SelectContext(ctx, &datasets, query, teacherID, teacherID, limit, offset)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get datasets for teacher %s: %w", teacherID, err))
 		return nil, 0, err
 	}
 
@@ -114,7 +158,7 @@ func (r *DatasetMySQLRepository) GetAll(ctx context.Context, offset, limit int) 
 	}
 
 	query := `
-		SELECT id, user_id, title, file_path, created_at, updated_at, indexed_at
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
 		FROM datasets
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
@@ -205,4 +249,21 @@ func (r *DatasetMySQLRepository) UpdateIndexedAt(ctx context.Context, id string)
 
 	logger.Debug(fmt.Sprintf("dataset %s indexed_at and updated_at updated", id))
 	return nil
+}
+
+func (r *DatasetMySQLRepository) ExistsByUserIDAndTopicID(ctx context.Context, userID, topicID string) (bool, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM datasets
+		WHERE user_id = ? AND topic_id = ?
+	`
+
+	err := r.db.GetContext(ctx, &count, query, userID, topicID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to check dataset existence for user %s and topic %s: %w", userID, topicID, err))
+		return false, err
+	}
+
+	return count > 0, nil
 }

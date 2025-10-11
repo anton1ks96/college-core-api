@@ -10,7 +10,7 @@ import (
 )
 
 type DatasetService interface {
-	Create(ctx context.Context, userID, title string, content io.Reader) (*domain.Dataset, error)
+	Create(ctx context.Context, userID, username, title, assignmentID string, content io.Reader) (*domain.Dataset, error)
 	GetByID(ctx context.Context, datasetID, userID string, role string) (*domain.DatasetResponse, error)
 	GetList(ctx context.Context, userID string, role string, page, limit int) (*domain.DatasetListResponse, error)
 	Update(ctx context.Context, datasetID, userID, title string, content *string) (*domain.Dataset, error)
@@ -28,15 +28,36 @@ type RAGService interface {
 	AskQuestion(ctx context.Context, datasetID string, question string) (*domain.AskResponse, error)
 }
 
+type TopicService interface {
+	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
+	SearchTeachers(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
+	CreateTopic(ctx context.Context, userID, userName, title, description string, students []domain.StudentInfo) (*domain.Topic, error)
+	GetMyTopics(ctx context.Context, userID string, page, limit int) ([]domain.Topic, int, error)
+	GetAllTopics(ctx context.Context, page, limit int) ([]domain.Topic, int, error)
+	GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error)
+	AddStudents(ctx context.Context, topicID, userID, userName, role string, students []domain.StudentInfo) error
+	GetTopicStudents(ctx context.Context, topicID, userID, role string) ([]domain.TopicStudentResponse, error)
+}
+
+type DatasetPermissionService interface {
+	GrantDatasetPermission(ctx context.Context, datasetID, teacherID, teacherName, grantedBy string) (string, error)
+	RevokeDatasetPermission(ctx context.Context, datasetID, teacherID string) error
+	GetAllPermissions(ctx context.Context, page, limit int) ([]domain.DatasetPermission, int, error)
+}
+
 type Services struct {
-	Dataset DatasetService
-	Auth    AuthService
-	RAG     RAGService
+	Dataset           DatasetService
+	Auth              AuthService
+	RAG               RAGService
+	Topic             TopicService
+	DatasetPermission DatasetPermissionService
 }
 
 type Repositories struct {
-	Dataset repository.DatasetRepository
-	File    repository.FileRepository
+	Dataset           repository.DatasetRepository
+	File              repository.FileRepository
+	Topic             repository.TopicRepository
+	DatasetPermission repository.DatasetPermissionRepository
 }
 
 type Deps struct {
@@ -48,16 +69,20 @@ func NewServices(deps Deps) *Services {
 	authService := NewAuthService(deps.Config)
 	ragService := NewRAGService(deps.Config)
 	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
+	topicService := NewTopicService(deps.Repos, deps.Config)
+	datasetPermissionService := NewDatasetPermissionService(deps.Repos)
 
 	return &Services{
-		Dataset: datasetService,
-		Auth:    authService,
-		RAG:     ragService,
+		Dataset:           datasetService,
+		Auth:              authService,
+		RAG:               ragService,
+		Topic:             topicService,
+		DatasetPermission: datasetPermissionService,
 	}
 }
 
 func checkPermission(userID, ownerID, role string) bool {
-	if role == "teacher" {
+	if role == "admin" || role == "teacher" {
 		return true
 	}
 	return userID == ownerID

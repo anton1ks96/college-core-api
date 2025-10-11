@@ -12,6 +12,7 @@ import (
 
 func (h *Handler) createDataset(c *gin.Context) {
 	userID, _ := c.Get("user_id")
+	username, _ := c.Get("username")
 
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -29,6 +30,15 @@ func (h *Handler) createDataset(c *gin.Context) {
 		return
 	}
 	title := titles[0]
+
+	assignmentIDs := form.Value["assignment_id"]
+	if len(assignmentIDs) == 0 || assignmentIDs[0] == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "assignment_id is required",
+		})
+		return
+	}
+	assignmentID := assignmentIDs[0]
 
 	files := form.File["file"]
 	if len(files) == 0 {
@@ -64,8 +74,26 @@ func (h *Handler) createDataset(c *gin.Context) {
 	}
 	defer src.Close()
 
-	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), title, src)
+	dataset, err := h.services.Dataset.Create(c.Request.Context(), userID.(string), username.(string), title, assignmentID, src)
 	if err != nil {
+		if err.Error() == "assignment not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "assignment not found",
+			})
+			return
+		}
+		if err.Error() == "access denied: assignment belongs to another student" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "access denied: assignment belongs to another student",
+			})
+			return
+		}
+		if err.Error() == "dataset already exists for this topic" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "dataset already exists for this topic",
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -340,4 +368,122 @@ func (h *Handler) reindexDataset(c *gin.Context) {
 func isMarkdownFile(filename string) bool {
 	return len(filename) > 3 && (filename[len(filename)-3:] == ".md" ||
 		(len(filename) > 9 && filename[len(filename)-9:] == ".markdown"))
+}
+
+func (h *Handler) grantDatasetPermission(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	userName, _ := c.Get("username")
+
+	var req domain.GrantPermissionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	permissionID, err := h.services.DatasetPermission.GrantDatasetPermission(
+		c.Request.Context(),
+		datasetID,
+		req.TeacherID,
+		req.TeacherName,
+		userName.(string),
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "permission already exists" {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": "permission already exists",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":      permissionID,
+		"message": "Access granted successfully",
+	})
+}
+
+func (h *Handler) revokeDatasetPermission(c *gin.Context) {
+	datasetID := c.Param("id")
+	teacherID := c.Param("teacher_id")
+
+	if datasetID == "" || teacherID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id and teacher id are required",
+		})
+		return
+	}
+
+	err := h.services.DatasetPermission.RevokeDatasetPermission(
+		c.Request.Context(),
+		datasetID,
+		teacherID,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "failed to revoke permission: permission not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "permission not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Access revoked successfully",
+	})
+}
+
+func (h *Handler) getAllPermissions(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	permissions, total, err := h.services.DatasetPermission.GetAllPermissions(
+		c.Request.Context(),
+		page,
+		limit,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"permissions": permissions,
+		"total":       total,
+		"page":        page,
+		"limit":       limit,
+	})
 }

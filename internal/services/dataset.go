@@ -27,7 +27,25 @@ func NewDatasetService(repos *Repositories, ragService RAGService, cfg *config.C
 	}
 }
 
-func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, content io.Reader) (*domain.Dataset, error) {
+func (s *DatasetServiceImpl) Create(ctx context.Context, userID, username, title, assignmentID string, content io.Reader) (*domain.Dataset, error) {
+	assignment, err := s.repos.Topic.GetAssignmentByID(ctx, assignmentID)
+	if err != nil {
+		return nil, fmt.Errorf("assignment not found")
+	}
+
+	if assignment.StudentID != userID {
+		return nil, fmt.Errorf("access denied: assignment belongs to another student")
+	}
+
+	exists, err := s.repos.Dataset.ExistsByUserIDAndTopicID(ctx, userID, assignment.TopicID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing dataset: %w", err)
+	}
+
+	if exists {
+		return nil, fmt.Errorf("dataset already exists for this topic")
+	}
+
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, content)
 	if err != nil {
@@ -38,11 +56,19 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, c
 		return nil, fmt.Errorf("file size exceeds limit: %d > %d bytes", size, s.cfg.Limits.MaxFileSize)
 	}
 
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID v7: %w", err)
+	}
+
 	dataset := &domain.Dataset{
-		ID:       uuid.New().String(),
-		UserID:   userID,
-		Title:    title,
-		FilePath: fmt.Sprintf("students/%s/%s/current.md", userID, uuid.New().String()),
+		ID:           id.String(),
+		UserID:       userID,
+		Author:       username,
+		Title:        title,
+		FilePath:     fmt.Sprintf("students/%s/%s/dataset.md", userID, uuid.New().String()),
+		TopicID:      &assignment.TopicID,
+		AssignmentID: &assignmentID,
 	}
 
 	err = s.repos.File.Upload(ctx, dataset.FilePath, bytes.NewReader(buf.Bytes()), "text/markdown")
@@ -70,13 +96,34 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, title string, c
 	return dataset, nil
 }
 
+func (s *DatasetServiceImpl) hasReadAccess(ctx context.Context, datasetID, userID, ownerID, role string) (bool, error) {
+	if role == "admin" {
+		return true, nil
+	}
+	if userID == ownerID {
+		return true, nil
+	}
+	if role == "teacher" {
+		hasPermission, err := s.repos.DatasetPermission.HasPermission(ctx, datasetID, userID)
+		if err != nil {
+			return false, fmt.Errorf("failed to check permission: %w", err)
+		}
+		return hasPermission, nil
+	}
+	return false, nil
+}
+
 func (s *DatasetServiceImpl) GetByID(ctx context.Context, datasetID, userID string, role string) (*domain.DatasetResponse, error) {
 	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !checkPermission(userID, dataset.UserID, role) {
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
 		return nil, fmt.Errorf("access denied")
 	}
 
@@ -89,7 +136,7 @@ func (s *DatasetServiceImpl) GetByID(ctx context.Context, datasetID, userID stri
 		ID:        dataset.ID,
 		Title:     dataset.Title,
 		Content:   string(content),
-		Author:    dataset.UserID, // TODO: получать имя пользователя из auth-svc
+		Author:    dataset.Author,
 		UserID:    dataset.UserID,
 		CreatedAt: dataset.CreatedAt,
 		UpdatedAt: dataset.UpdatedAt,
@@ -112,8 +159,10 @@ func (s *DatasetServiceImpl) GetList(ctx context.Context, userID string, role st
 	var total int
 	var err error
 
-	if role == "teacher" || role == "admin" {
+	if role == "admin" {
 		datasets, total, err = s.repos.Dataset.GetAll(ctx, offset, limit)
+	} else if role == "teacher" {
+		datasets, total, err = s.repos.Dataset.GetByTeacherID(ctx, userID, offset, limit)
 	} else {
 		datasets, total, err = s.repos.Dataset.GetByUserID(ctx, userID, offset, limit)
 	}
@@ -182,7 +231,11 @@ func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID,
 		return nil, err
 	}
 
-	if !checkPermission(userID, dataset.UserID, role) {
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
 		return nil, fmt.Errorf("access denied")
 	}
 

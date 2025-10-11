@@ -42,7 +42,7 @@ type TopicService interface {
 type DatasetPermissionService interface {
 	GrantDatasetPermission(ctx context.Context, datasetID, teacherID, teacherName, grantedBy string) (string, error)
 	RevokeDatasetPermission(ctx context.Context, datasetID, teacherID string) error
-	GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.PermissionResponse, error)
+	GetAllPermissions(ctx context.Context, page, limit int) ([]domain.DatasetPermission, int, error)
 }
 
 type Services struct {

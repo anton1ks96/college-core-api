@@ -34,7 +34,11 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 
 		datasets.POST("/:id/permissions", httpmw.RequireRole("admin"), h.grantDatasetPermission)
 		datasets.DELETE("/:id/permissions/:teacher_id", httpmw.RequireRole("admin"), h.revokeDatasetPermission)
-		datasets.GET("/:id/permissions", httpmw.RequireRole("admin"), h.getDatasetPermissions)
+	}
+
+	permissions := api.Group("/permissions")
+	{
+		permissions.GET("", httpmw.RequireRole("admin"), h.getAllPermissions)
 	}
 
 	topics := api.Group("/topics")

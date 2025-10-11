@@ -152,23 +152,16 @@ type AssignmentWithDetails struct {
 }
 
 type DatasetPermission struct {
-	ID          string    `json:"id" db:"id"`
-	DatasetID   string    `json:"dataset_id" db:"dataset_id"`
-	TeacherID   string    `json:"teacher_id" db:"teacher_id"`
-	TeacherName string    `json:"teacher_name" db:"teacher_name"`
-	GrantedBy   string    `json:"granted_by" db:"granted_by"`
-	GrantedAt   time.Time `json:"granted_at" db:"granted_at"`
+	ID           string    `json:"id" db:"id"`
+	DatasetID    string    `json:"dataset_id" db:"dataset_id"`
+	DatasetTitle *string   `json:"dataset_title,omitempty" db:"dataset_title"`
+	TeacherID    string    `json:"teacher_id" db:"teacher_id"`
+	TeacherName  string    `json:"teacher_name" db:"teacher_name"`
+	GrantedBy    string    `json:"granted_by" db:"granted_by"`
+	GrantedAt    time.Time `json:"granted_at" db:"granted_at"`
 }
 
 type GrantPermissionRequest struct {
 	TeacherID   string `json:"teacher_id" binding:"required"`
 	TeacherName string `json:"teacher_name" binding:"required"`
-}
-
-type PermissionResponse struct {
-	ID          string    `json:"id"`
-	TeacherID   string    `json:"teacher_id"`
-	TeacherName string    `json:"teacher_name"`
-	GrantedBy   string    `json:"granted_by"`
-	GrantedAt   time.Time `json:"granted_at"`
 }

@@ -67,31 +67,21 @@ func (s *DatasetPermissionServiceImpl) RevokeDatasetPermission(ctx context.Conte
 	return nil
 }
 
-func (s *DatasetPermissionServiceImpl) GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.PermissionResponse, error) {
-	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
+func (s *DatasetPermissionServiceImpl) GetAllPermissions(ctx context.Context, page, limit int) ([]domain.DatasetPermission, int, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	offset := (page - 1) * limit
+
+	permissions, total, err := s.repos.DatasetPermission.GetAllPermissions(ctx, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, fmt.Errorf("failed to get all permissions: %w", err)
 	}
 
-	if dataset == nil {
-		return nil, fmt.Errorf("dataset not found")
-	}
-
-	permissions, err := s.repos.DatasetPermission.GetPermissionsByDatasetID(ctx, datasetID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get permissions: %w", err)
-	}
-
-	result := make([]domain.PermissionResponse, 0, len(permissions))
-	for _, p := range permissions {
-		result = append(result, domain.PermissionResponse{
-			ID:          p.ID,
-			TeacherID:   p.TeacherID,
-			TeacherName: p.TeacherName,
-			GrantedBy:   p.GrantedBy,
-			GrantedAt:   p.GrantedAt,
-		})
-	}
-
-	return result, nil
+	return permissions, total, nil
 }

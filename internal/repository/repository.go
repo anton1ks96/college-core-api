@@ -41,6 +41,6 @@ type TopicRepository interface {
 type DatasetPermissionRepository interface {
 	GrantPermission(ctx context.Context, permission *domain.DatasetPermission) error
 	RevokePermission(ctx context.Context, datasetID, teacherID string) error
-	GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 	HasPermission(ctx context.Context, datasetID, teacherID string) (bool, error)
+	GetAllPermissions(ctx context.Context, offset, limit int) ([]domain.DatasetPermission, int, error)
 }

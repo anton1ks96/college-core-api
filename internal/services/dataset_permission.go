@@ -85,3 +85,21 @@ func (s *DatasetPermissionServiceImpl) GetAllPermissions(ctx context.Context, pa
 
 	return permissions, total, nil
 }
+
+func (s *DatasetPermissionServiceImpl) GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error) {
+	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
+	if err != nil {
+		return nil, err
+	}
+
+	if dataset == nil {
+		return nil, fmt.Errorf("dataset not found")
+	}
+
+	permissions, err := s.repos.DatasetPermission.GetPermissionsByDatasetID(ctx, datasetID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dataset permissions: %w", err)
+	}
+
+	return permissions, nil
+}

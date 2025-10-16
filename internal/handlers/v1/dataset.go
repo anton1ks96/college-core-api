@@ -487,3 +487,35 @@ func (h *Handler) getAllPermissions(c *gin.Context) {
 		"limit":       limit,
 	})
 }
+
+func (h *Handler) getDatasetPermissions(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	permissions, err := h.services.DatasetPermission.GetDatasetPermissions(
+		c.Request.Context(),
+		datasetID,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"permissions": permissions,
+	})
+}

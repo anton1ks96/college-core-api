@@ -23,6 +23,6 @@ func NewClient(cfg *config.Config) (*sqlx.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	logger.Info("connected to MySQL successfully")
+	logger.Info("Connected to MySQL successfully")
 	return db, nil
 }

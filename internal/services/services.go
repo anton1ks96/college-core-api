@@ -37,12 +37,14 @@ type TopicService interface {
 	GetAssignedTopics(ctx context.Context, studentID string) ([]domain.AssignedTopicResponse, error)
 	AddStudents(ctx context.Context, topicID, userID, userName, role string, students []domain.StudentInfo) error
 	GetTopicStudents(ctx context.Context, topicID, userID, role string) ([]domain.TopicStudentResponse, error)
+	RemoveStudent(ctx context.Context, topicID, studentID, userID, role string) error
 }
 
 type DatasetPermissionService interface {
 	GrantDatasetPermission(ctx context.Context, datasetID, teacherID, teacherName, grantedBy string) (string, error)
 	RevokeDatasetPermission(ctx context.Context, datasetID, teacherID string) error
 	GetAllPermissions(ctx context.Context, page, limit int) ([]domain.DatasetPermission, int, error)
+	GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 }
 
 type Services struct {

@@ -263,3 +263,28 @@ func (r *TopicMySQLRepository) GetAssignmentByID(ctx context.Context, id string)
 
 	return &assignment, nil
 }
+
+func (r *TopicMySQLRepository) RemoveAssignment(ctx context.Context, topicID, studentID string) error {
+	query := `
+		DELETE FROM topic_assignments
+		WHERE topic_id = ? AND student_id = ?
+	`
+
+	result, err := r.db.ExecContext(ctx, query, topicID, studentID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to remove assignment: %w", err))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("assignment not found")
+	}
+
+	logger.Debug(fmt.Sprintf("assignment removed: student %s from topic %s", studentID, topicID))
+	return nil
+}

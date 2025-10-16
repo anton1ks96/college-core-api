@@ -32,7 +32,6 @@ func (h *Handler) Init() *gin.Engine {
 	)
 
 	router.GET("/health", h.healthCheck)
-	router.GET("/ready", h.readinessCheck)
 
 	h.initAPI(router)
 
@@ -53,14 +52,6 @@ func (h *Handler) initAPI(router *gin.Engine) {
 func (h *Handler) healthCheck(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status":  "OK",
-		"service": "college-core-api",
-	})
-}
-
-func (h *Handler) readinessCheck(c *gin.Context) {
-	// TODO: проверить подключения к БД, MinIO, внешним сервисам
-	c.JSON(200, gin.H{
-		"ready":   true,
 		"service": "college-core-api",
 	})
 }

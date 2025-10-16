@@ -135,3 +135,30 @@ func (r *DatasetPermissionMySQLRepository) GetAllPermissions(ctx context.Context
 
 	return datasetsPerms, total, nil
 }
+
+func (r *DatasetPermissionMySQLRepository) GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error) {
+	var permissions []domain.DatasetPermission
+
+	query := `
+		SELECT
+			dp.id,
+			dp.dataset_id,
+			d.title as dataset_title,
+			dp.teacher_id,
+			dp.teacher_name,
+			dp.granted_by,
+			dp.granted_at
+		FROM datasets_permission dp
+		LEFT JOIN datasets d ON dp.dataset_id = d.id
+		WHERE dp.dataset_id = ?
+		ORDER BY dp.granted_at DESC
+	`
+
+	err := r.db.SelectContext(ctx, &permissions, query, datasetID)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get permissions for dataset %s: %w", datasetID, err))
+		return nil, err
+	}
+
+	return permissions, nil
+}

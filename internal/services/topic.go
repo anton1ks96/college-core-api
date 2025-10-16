@@ -299,3 +299,20 @@ func (s *TopicServiceImpl) GetTopicStudents(ctx context.Context, topicID, userID
 
 	return result, nil
 }
+
+func (s *TopicServiceImpl) RemoveStudent(ctx context.Context, topicID, studentID, userID, role string) error {
+	topic, err := s.repos.Topic.GetByID(ctx, topicID)
+	if err != nil {
+		return err
+	}
+
+	if role != "admin" && topic.CreatedByID != userID {
+		return fmt.Errorf("access denied: only topic creator or admin can remove students")
+	}
+
+	if err := s.repos.Topic.RemoveAssignment(ctx, topicID, studentID); err != nil {
+		return fmt.Errorf("failed to remove student: %w", err)
+	}
+
+	return nil
+}

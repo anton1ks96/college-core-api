@@ -32,6 +32,7 @@ type TopicRepository interface {
 	GetByCreatorID(ctx context.Context, creatorID string, offset, limit int) ([]domain.Topic, int, error)
 	GetAll(ctx context.Context, offset, limit int) ([]domain.Topic, int, error)
 	AddAssignments(ctx context.Context, assignments []domain.TopicAssignment) error
+	RemoveAssignment(ctx context.Context, topicID, studentID string) error
 	GetAssignmentsByStudentID(ctx context.Context, studentID string) ([]domain.TopicAssignment, error)
 	GetAssignmentsWithDetailsByStudentID(ctx context.Context, studentID string) ([]domain.AssignmentWithDetails, error)
 	GetAssignmentsByTopicID(ctx context.Context, topicID string) ([]domain.TopicAssignment, error)
@@ -43,4 +44,5 @@ type DatasetPermissionRepository interface {
 	RevokePermission(ctx context.Context, datasetID, teacherID string) error
 	HasPermission(ctx context.Context, datasetID, teacherID string) (bool, error)
 	GetAllPermissions(ctx context.Context, offset, limit int) ([]domain.DatasetPermission, int, error)
+	GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 }

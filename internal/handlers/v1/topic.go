@@ -269,3 +269,56 @@ func (h *Handler) searchTeachers(c *gin.Context) {
 		"total":    total,
 	})
 }
+
+func (h *Handler) removeStudentFromTopic(c *gin.Context) {
+	topicID := c.Param("id")
+	studentID := c.Param("student_id")
+
+	if topicID == "" || studentID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "topic id and student id are required",
+		})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	err := h.services.Topic.RemoveStudent(
+		c.Request.Context(),
+		topicID,
+		studentID,
+		userID.(string),
+		role.(string),
+	)
+
+	if err != nil {
+		if err.Error() == "access denied: only topic creator or admin can remove students" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if err.Error() == "topic not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "topic not found",
+			})
+			return
+		}
+		if err.Error() == "failed to remove student: assignment not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "student assignment not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Student removed from topic successfully",
+	})
+}

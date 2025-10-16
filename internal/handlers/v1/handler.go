@@ -32,6 +32,7 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 		datasets.POST("/:id/ask", httpmw.RateLimitMiddleware(h.cfg.Limits.AskRateLimit), h.askQuestion)
 		datasets.POST("/:id/reindex", h.reindexDataset)
 
+		datasets.GET("/:id/permissions", httpmw.RequireRole("admin"), h.getDatasetPermissions)
 		datasets.POST("/:id/permissions", httpmw.RequireRole("admin"), h.grantDatasetPermission)
 		datasets.DELETE("/:id/permissions/:teacher_id", httpmw.RequireRole("admin"), h.revokeDatasetPermission)
 	}
@@ -48,6 +49,7 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 		topics.GET("/all", httpmw.RequireRole("admin"), h.getAllTopics)
 		topics.POST("/:id/students", httpmw.RequireRole("teacher", "admin"), h.addStudentsToTopic)
 		topics.GET("/:id/students", httpmw.RequireRole("teacher", "admin"), h.getTopicStudents)
+		topics.DELETE("/:id/students/:student_id", httpmw.RequireRole("teacher", "admin"), h.removeStudentFromTopic)
 
 		topics.GET("/assigned", h.getAssignedTopics)
 	}

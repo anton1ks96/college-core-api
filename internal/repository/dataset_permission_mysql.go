@@ -88,11 +88,17 @@ func (r *DatasetPermissionMySQLRepository) HasPermission(ctx context.Context, da
 
 	query := `
 		SELECT COUNT(*)
-		FROM datasets_permission
-		WHERE dataset_id = ? AND teacher_id = ?
+		FROM (
+			SELECT 1 FROM datasets_permission
+			WHERE dataset_id = ? AND teacher_id = ?
+			UNION
+			SELECT 1 FROM datasets d
+			JOIN topic_assignments ta ON d.assignment_id = ta.id
+			WHERE d.id = ? AND ta.assigned_by_id = ?
+		) AS permissions
 	`
 
-	err := r.db.GetContext(ctx, &count, query, datasetID, teacherID)
+	err := r.db.GetContext(ctx, &count, query, datasetID, teacherID, datasetID, teacherID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		logger.Error(fmt.Errorf("failed to check permission: %w", err))
 		return false, err

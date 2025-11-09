@@ -83,12 +83,13 @@ type Topic struct {
 }
 
 type TopicAssignment struct {
-	ID          string    `json:"id" db:"id"`
-	TopicID     string    `json:"topic_id" db:"topic_id"`
-	StudentID   string    `json:"student_id" db:"student_id"`
-	StudentName string    `json:"student_name" db:"student_name"`
-	AssignedBy  string    `json:"assigned_by" db:"assigned_by"`
-	AssignedAt  time.Time `json:"assigned_at" db:"assigned_at"`
+	ID           string    `json:"id" db:"id"`
+	TopicID      string    `json:"topic_id" db:"topic_id"`
+	StudentID    string    `json:"student_id" db:"student_id"`
+	StudentName  string    `json:"student_name" db:"student_name"`
+	AssignedBy   string    `json:"assigned_by" db:"assigned_by"`
+	AssignedByID string    `json:"assigned_by_id" db:"assigned_by_id"`
+	AssignedAt   time.Time `json:"assigned_at" db:"assigned_at"`
 }
 
 type StudentInfo struct {

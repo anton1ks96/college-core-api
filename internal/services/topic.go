@@ -130,12 +130,13 @@ func (s *TopicServiceImpl) CreateTopic(ctx context.Context, userID, userName, ti
 
 		for _, student := range students {
 			assignments = append(assignments, domain.TopicAssignment{
-				ID:          uuid.New().String(),
-				TopicID:     topic.ID,
-				StudentID:   student.ID,
-				StudentName: student.Username,
-				AssignedBy:  userName,
-				AssignedAt:  now,
+				ID:           uuid.New().String(),
+				TopicID:      topic.ID,
+				StudentID:    student.ID,
+				StudentName:  student.Username,
+				AssignedBy:   userName,
+				AssignedByID: userID,
+				AssignedAt:   now,
 			})
 		}
 
@@ -249,12 +250,13 @@ func (s *TopicServiceImpl) AddStudents(ctx context.Context, topicID, userID, use
 		}
 
 		assignments = append(assignments, domain.TopicAssignment{
-			ID:          id.String(),
-			TopicID:     topicID,
-			StudentID:   student.ID,
-			StudentName: student.Username,
-			AssignedBy:  userName,
-			AssignedAt:  now,
+			ID:           id.String(),
+			TopicID:      topicID,
+			StudentID:    student.ID,
+			StudentName:  student.Username,
+			AssignedBy:   userName,
+			AssignedByID: userID,
+			AssignedAt:   now,
 		})
 	}
 

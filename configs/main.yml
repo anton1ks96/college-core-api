@@ -18,7 +18,7 @@ auth_service:
   timeout: 5s
 
 rag_service:
-  timeout: 30s
+  timeout: 5m
 
 limits:
   maxFileSize: 10485760   # 10MB

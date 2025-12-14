@@ -35,6 +35,17 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 		datasets.GET("/:id/permissions", httpmw.RequireRole("admin"), h.getDatasetPermissions)
 		datasets.POST("/:id/permissions", httpmw.RequireRole("admin"), h.grantDatasetPermission)
 		datasets.DELETE("/:id/permissions/:teacher_id", httpmw.RequireRole("admin"), h.revokeDatasetPermission)
+
+		datasets.POST("/:id/chats", httpmw.RequireRole("teacher", "admin"), h.createSavedChat)
+		datasets.GET("/:id/chats", httpmw.RequireRole("teacher", "admin"), h.getSavedChats)
+	}
+
+	chats := api.Group("/chats")
+	{
+		chats.GET("/:chat_id", httpmw.RequireRole("teacher", "admin"), h.getSavedChat)
+		chats.PUT("/:chat_id", httpmw.RequireRole("teacher", "admin"), h.updateSavedChat)
+		chats.DELETE("/:chat_id", httpmw.RequireRole("teacher", "admin"), h.deleteSavedChat)
+		chats.GET("/:chat_id/download", httpmw.RequireRole("teacher", "admin"), h.downloadSavedChat)
 	}
 
 	permissions := api.Group("/permissions")

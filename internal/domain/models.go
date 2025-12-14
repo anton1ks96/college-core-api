@@ -166,3 +166,58 @@ type GrantPermissionRequest struct {
 	TeacherID   string `json:"teacher_id" binding:"required"`
 	TeacherName string `json:"teacher_name" binding:"required"`
 }
+
+type SavedChat struct {
+	ID        string    `json:"id" db:"id"`
+	DatasetID string    `json:"dataset_id" db:"dataset_id"`
+	Title     string    `json:"title" db:"title"`
+	CreatedBy string    `json:"created_by" db:"created_by"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type ChatMessage struct {
+	ID            string     `json:"id" db:"id"`
+	ChatID        string     `json:"chat_id" db:"chat_id"`
+	Question      string     `json:"question" db:"question"`
+	Answer        string     `json:"answer" db:"answer"`
+	Citations     []Citation `json:"citations,omitempty" db:"-"`
+	CitationsJSON string     `json:"-" db:"citations"`
+	OrderNum      int        `json:"order_num" db:"order_num"`
+	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
+}
+
+type SavedChatListResponse struct {
+	Chats []SavedChat `json:"chats"`
+	Total int         `json:"total"`
+	Page  int         `json:"page"`
+	Limit int         `json:"limit"`
+}
+
+type SavedChatResponse struct {
+	ID        string        `json:"id"`
+	DatasetID string        `json:"dataset_id"`
+	Title     string        `json:"title"`
+	CreatedBy string        `json:"created_by"`
+	UserID    string        `json:"user_id"`
+	Messages  []ChatMessage `json:"messages"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+type CreateSavedChatRequest struct {
+	Title    string             `json:"title" binding:"required"`
+	Messages []ChatMessageInput `json:"messages" binding:"required,min=1,dive"`
+}
+
+type UpdateSavedChatRequest struct {
+	Title    string             `json:"title" binding:"required"`
+	Messages []ChatMessageInput `json:"messages" binding:"required,min=1,dive"`
+}
+
+type ChatMessageInput struct {
+	Question  string     `json:"question" binding:"required"`
+	Answer    string     `json:"answer" binding:"required"`
+	Citations []Citation `json:"citations,omitempty"`
+}

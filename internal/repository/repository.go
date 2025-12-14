@@ -46,3 +46,14 @@ type DatasetPermissionRepository interface {
 	GetAllPermissions(ctx context.Context, offset, limit int) ([]domain.DatasetPermission, int, error)
 	GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 }
+
+type SavedChatRepository interface {
+	Create(ctx context.Context, chat *domain.SavedChat) error
+	GetByID(ctx context.Context, id string) (*domain.SavedChat, error)
+	GetByDatasetID(ctx context.Context, datasetID string, offset, limit int) ([]domain.SavedChat, int, error)
+	Update(ctx context.Context, chat *domain.SavedChat) error
+	Delete(ctx context.Context, id string) error
+	GetMessagesByChatID(ctx context.Context, chatID string) ([]domain.ChatMessage, error)
+	SaveMessages(ctx context.Context, chatID string, messages []domain.ChatMessage) error
+	DeleteMessages(ctx context.Context, chatID string) error
+}

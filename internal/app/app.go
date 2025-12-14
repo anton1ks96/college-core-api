@@ -35,12 +35,14 @@ func Run() {
 	}
 	topicRepo := repository.NewTopicRepository(cfg, db)
 	datasetPermissionRepo := repository.NewDatasetPermissionRepository(cfg, db)
+	savedChatRepo := repository.NewSavedChatRepository(cfg, db)
 
 	repos := &services.Repositories{
 		Dataset:           datasetRepo,
 		File:              fileRepo,
 		Topic:             topicRepo,
 		DatasetPermission: datasetPermissionRepo,
+		SavedChat:         savedChatRepo,
 	}
 
 	servicesInstance := services.NewServices(services.Deps{

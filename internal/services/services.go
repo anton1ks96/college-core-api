@@ -47,12 +47,22 @@ type DatasetPermissionService interface {
 	GetDatasetPermissions(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 }
 
+type SavedChatService interface {
+	CreateChat(ctx context.Context, datasetID, userID, username, role, title string, messages []domain.ChatMessageInput) (*domain.SavedChatResponse, error)
+	GetChatsByDataset(ctx context.Context, datasetID, userID, role string, page, limit int) (*domain.SavedChatListResponse, error)
+	GetChat(ctx context.Context, chatID, userID, role string) (*domain.SavedChatResponse, error)
+	UpdateChat(ctx context.Context, chatID, userID, role, title string, messages []domain.ChatMessageInput) (*domain.SavedChatResponse, error)
+	DeleteChat(ctx context.Context, chatID, userID, role string) error
+	DownloadChatMarkdown(ctx context.Context, chatID, userID, role string) ([]byte, string, error)
+}
+
 type Services struct {
 	Dataset           DatasetService
 	Auth              AuthService
 	RAG               RAGService
 	Topic             TopicService
 	DatasetPermission DatasetPermissionService
+	SavedChat         SavedChatService
 }
 
 type Repositories struct {
@@ -60,6 +70,7 @@ type Repositories struct {
 	File              repository.FileRepository
 	Topic             repository.TopicRepository
 	DatasetPermission repository.DatasetPermissionRepository
+	SavedChat         repository.SavedChatRepository
 }
 
 type Deps struct {
@@ -73,6 +84,7 @@ func NewServices(deps Deps) *Services {
 	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
 	topicService := NewTopicService(deps.Repos, deps.Config)
 	datasetPermissionService := NewDatasetPermissionService(deps.Repos)
+	savedChatService := NewSavedChatService(deps.Repos)
 
 	return &Services{
 		Dataset:           datasetService,
@@ -80,6 +92,7 @@ func NewServices(deps Deps) *Services {
 		RAG:               ragService,
 		Topic:             topicService,
 		DatasetPermission: datasetPermissionService,
+		SavedChat:         savedChatService,
 	}
 }
 

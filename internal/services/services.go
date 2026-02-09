@@ -23,11 +23,6 @@ type AuthService interface {
 	ValidateToken(ctx context.Context, token string) (*domain.User, error)
 }
 
-type RAGService interface {
-	IndexDataset(ctx context.Context, datasetID string, title, content string) (int, error)
-	AskQuestion(ctx context.Context, datasetID string, question string) (*domain.AskResponse, error)
-}
-
 type TopicService interface {
 	SearchStudents(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
 	SearchTeachers(ctx context.Context, query string) ([]domain.StudentInfo, int, error)
@@ -59,7 +54,6 @@ type SavedChatService interface {
 type Services struct {
 	Dataset           DatasetService
 	Auth              AuthService
-	RAG               RAGService
 	Topic             TopicService
 	DatasetPermission DatasetPermissionService
 	SavedChat         SavedChatService
@@ -80,8 +74,7 @@ type Deps struct {
 
 func NewServices(deps Deps) *Services {
 	authService := NewAuthService(deps.Config)
-	ragService := NewRAGService(deps.Config)
-	datasetService := NewDatasetService(deps.Repos, ragService, deps.Config)
+	datasetService := NewDatasetService(deps.Repos, deps.Config)
 	topicService := NewTopicService(deps.Repos, deps.Config)
 	datasetPermissionService := NewDatasetPermissionService(deps.Repos)
 	savedChatService := NewSavedChatService(deps.Repos)
@@ -89,18 +82,10 @@ func NewServices(deps Deps) *Services {
 	return &Services{
 		Dataset:           datasetService,
 		Auth:              authService,
-		RAG:               ragService,
 		Topic:             topicService,
 		DatasetPermission: datasetPermissionService,
 		SavedChat:         savedChatService,
 	}
-}
-
-func checkPermission(userID, ownerID, role string) bool {
-	if role == "admin" || role == "teacher" {
-		return true
-	}
-	return userID == ownerID
 }
 
 func checkEditPermission(userID, ownerID string) bool {

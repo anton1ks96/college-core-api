@@ -14,16 +14,14 @@ import (
 )
 
 type DatasetServiceImpl struct {
-	repos      *Repositories
-	ragService RAGService
-	cfg        *config.Config
+	repos *Repositories
+	cfg   *config.Config
 }
 
-func NewDatasetService(repos *Repositories, ragService RAGService, cfg *config.Config) *DatasetServiceImpl {
+func NewDatasetService(repos *Repositories, cfg *config.Config) *DatasetServiceImpl {
 	return &DatasetServiceImpl{
-		repos:      repos,
-		ragService: ragService,
-		cfg:        cfg,
+		repos: repos,
+		cfg:   cfg,
 	}
 }
 
@@ -81,17 +79,6 @@ func (s *DatasetServiceImpl) Create(ctx context.Context, userID, username, title
 		_ = s.repos.File.Delete(ctx, dataset.FilePath)
 		return nil, fmt.Errorf("failed to save dataset metadata: %w", err)
 	}
-
-	go func() {
-		chunks, err := s.ragService.IndexDataset(context.Background(), dataset.ID, title, buf.String())
-		if err != nil {
-			logger.Error(fmt.Errorf("failed to index dataset %s: %w", dataset.ID, err))
-			return
-		}
-
-		_ = s.repos.Dataset.UpdateIndexedAt(context.Background(), dataset.ID)
-		logger.Info(fmt.Sprintf("dataset %s indexed successfully with %d chunks", dataset.ID, chunks))
-	}()
 
 	return dataset, nil
 }
@@ -243,12 +230,7 @@ func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID,
 		return nil, fmt.Errorf("dataset is not indexed yet, please wait")
 	}
 
-	response, err := s.ragService.AskQuestion(ctx, datasetID, question)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get answer: %w", err)
-	}
-
-	return response, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *DatasetServiceImpl) Reindex(ctx context.Context, datasetID, userID string) (*domain.IndexResponse, error) {
@@ -261,24 +243,5 @@ func (s *DatasetServiceImpl) Reindex(ctx context.Context, datasetID, userID stri
 		return nil, fmt.Errorf("access denied: only owner can reindex dataset")
 	}
 
-	content, err := s.repos.File.Download(ctx, dataset.FilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download file: %w", err)
-	}
-
-	chunks, err := s.ragService.IndexDataset(ctx, datasetID, dataset.Title, string(content))
-	if err != nil {
-		return nil, fmt.Errorf("failed to index dataset: %w", err)
-	}
-
-	err = s.repos.Dataset.UpdateIndexedAt(ctx, datasetID)
-	if err != nil {
-		logger.Error(fmt.Errorf("failed to update indexed_at: %w", err))
-	}
-
-	return &domain.IndexResponse{
-		Success: true,
-		Chunks:  chunks,
-		Message: fmt.Sprintf("Dataset reindexed successfully with %d chunks", chunks),
-	}, nil
+	return nil, fmt.Errorf("not implemented")
 }

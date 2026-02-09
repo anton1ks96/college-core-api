@@ -27,7 +27,7 @@ func NewClient(cfg *config.Config) (*Qdrant, error) {
 		APIKey: cfg.Qdrant.ApiKey,
 		UseTLS: false,
 	}
-	
+
 	client, err := qdrant.NewClient(qCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create qdrant client: %w", err)

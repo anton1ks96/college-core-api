@@ -17,7 +17,6 @@ type (
 		Database    Database
 		MinIO       MinIOConfig
 		AuthService AuthServiceConfig
-		RAGService  RAGServiceConfig
 		Limits      LimitsConfig
 		Qdrant      QdrantConfig
 	}
@@ -49,12 +48,6 @@ type (
 		URL           string
 		Timeout       time.Duration
 		InternalToken string
-	}
-
-	RAGServiceConfig struct {
-		URL     string
-		Token   string
-		Timeout time.Duration
 	}
 
 	LimitsConfig struct {
@@ -132,16 +125,6 @@ func setFromEnv(cfg *Config) error {
 	cfg.AuthService.InternalToken = os.Getenv("INTERNAL_SERVICE_TOKEN")
 	if cfg.AuthService.InternalToken == "" {
 		return errors.New("INTERNAL_SERVICE_TOKEN environment variable is required")
-	}
-
-	cfg.RAGService.URL = os.Getenv("RAG_SERVICE_URL")
-	cfg.RAGService.Token = os.Getenv("RAG_SERVICE_TOKEN")
-
-	if cfg.RAGService.URL == "" {
-		return errors.New("RAG_SERVICE_URL environment variable is required")
-	}
-	if cfg.RAGService.Token == "" {
-		return errors.New("RAG_SERVICE_TOKEN environment variable is required")
 	}
 
 	cfg.Qdrant.Host = os.Getenv("QDRANT_HOST")

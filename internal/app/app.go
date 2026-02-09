@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/anton1ks96/college-core-api/internal/client/sglang"
+	"github.com/anton1ks96/college-core-api/internal/client/llm"
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/internal/handlers"
 	"github.com/anton1ks96/college-core-api/internal/repository"
@@ -35,7 +35,7 @@ func Run() {
 		logger.Fatal(err)
 	}
 
-	_ = sglang.NewClient(cfg)
+	_ = llm.NewClient(cfg)
 
 	datasetRepo := repository.NewDatasetRepository(cfg, db)
 	fileRepo, err := repository.NewFileRepository(cfg)

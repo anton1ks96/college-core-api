@@ -17,7 +17,7 @@ minio:
 auth_service:
   timeout: 5s
 
-sglang:
+llm:
   timeout: 5m
 
 limits:

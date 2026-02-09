@@ -1,4 +1,4 @@
-package sglang
+package llm
 
 import (
 	"bufio"
@@ -22,10 +22,10 @@ type Client struct {
 func NewClient(cfg *config.Config) *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: cfg.SGLang.Timeout,
+			Timeout: cfg.LLM.Timeout,
 		},
-		baseURL: cfg.SGLang.URL,
-		model:   cfg.SGLang.Model,
+		baseURL: cfg.LLM.URL,
+		model:   cfg.LLM.Model,
 	}
 }
 
@@ -98,7 +98,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, messages []Message, t
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			errc <- fmt.Errorf("sglang returned status %d: %s", resp.StatusCode, string(body))
+			errc <- fmt.Errorf("llm returned status %d: %s", resp.StatusCode, string(body))
 			return
 		}
 

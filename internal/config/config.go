@@ -19,6 +19,7 @@ type (
 		AuthService AuthServiceConfig
 		RAGService  RAGServiceConfig
 		Limits      LimitsConfig
+		Qdrant      QdrantConfig
 	}
 
 	Server struct {
@@ -61,6 +62,12 @@ type (
 		MaxDatasetsPerUser int
 		UploadRateLimit    int
 		AskRateLimit       int
+	}
+
+	QdrantConfig struct {
+		Host   string
+		Port   string
+		ApiKey string
 	}
 )
 
@@ -136,6 +143,18 @@ func setFromEnv(cfg *Config) error {
 	if cfg.RAGService.Token == "" {
 		return errors.New("RAG_SERVICE_TOKEN environment variable is required")
 	}
+
+	cfg.Qdrant.Host = os.Getenv("QDRANT_HOST")
+	if cfg.Qdrant.Host == "" {
+		cfg.Qdrant.Host = "localhost"
+	}
+
+	cfg.Qdrant.Port = os.Getenv("QDRANT_PORT")
+	if cfg.Qdrant.Port == "" {
+		cfg.Qdrant.Port = "6334"
+	}
+
+	cfg.Qdrant.ApiKey = os.Getenv("QDRANT_API_KEY")
 
 	return nil
 }

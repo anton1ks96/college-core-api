@@ -14,6 +14,7 @@ import (
 	"github.com/anton1ks96/college-core-api/internal/server"
 	"github.com/anton1ks96/college-core-api/internal/services"
 	"github.com/anton1ks96/college-core-api/pkg/database/mysql"
+	"github.com/anton1ks96/college-core-api/pkg/database/qdrant"
 	"github.com/anton1ks96/college-core-api/pkg/logger"
 )
 
@@ -24,6 +25,11 @@ func Run() {
 	}
 
 	db, err := mysql.NewClient(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	_, err = qdrant.NewClient(cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}

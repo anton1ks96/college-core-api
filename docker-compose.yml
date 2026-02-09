@@ -1,0 +1,65 @@
+services:
+  # Сервер с ГПУ
+  embeddings-gpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:cuda-1.8.1
+    container_name: tei-embeddings
+    profiles: ["gpu"]
+    ports:
+      - "6500:80"
+    volumes:
+      - tei-data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: --model-id BAAI/bge-m3 --port 80
+    restart: unless-stopped
+
+  reranker-gpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:cuda-1.8.1
+    container_name: tei-reranker
+    profiles: ["gpu"]
+    ports:
+      - "6501:80"
+    volumes:
+      - tei-data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: --model-id BAAI/bge-reranker-v2-m3 --port 80
+    restart: unless-stopped
+
+  # Локальная разработка на Мак
+  embeddings-cpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    container_name: tei-embeddings
+    profiles: ["cpu"]
+    platform: linux/amd64
+    ports:
+      - "6500:80"
+    volumes:
+      - tei-data:/data
+    command: --model-id BAAI/bge-m3 --port 80
+    restart: unless-stopped
+
+  reranker-cpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
+    container_name: tei-reranker
+    profiles: ["cpu"]
+    platform: linux/amd64
+    ports:
+      - "6501:80"
+    volumes:
+      - tei-data:/data
+    command: --model-id BAAI/bge-reranker-v2-m3 --port 80
+    restart: unless-stopped
+
+volumes:
+  tei-data:

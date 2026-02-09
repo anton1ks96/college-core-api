@@ -20,6 +20,7 @@ type (
 		Limits      LimitsConfig
 		Qdrant      QdrantConfig
 		LLM         LLMConfig
+		TEI         TEIConfig
 	}
 
 	Server struct {
@@ -68,6 +69,12 @@ type (
 		URL     string
 		Model   string
 		Timeout time.Duration
+	}
+
+	TEIConfig struct {
+		EmbeddingsURL string
+		RerankerURL   string
+		Timeout       time.Duration
 	}
 )
 
@@ -154,6 +161,16 @@ func setFromEnv(cfg *Config) error {
 	cfg.LLM.Model = os.Getenv("LLM_MODEL")
 	if cfg.LLM.Model == "" {
 		cfg.LLM.Model = "default"
+	}
+
+	cfg.TEI.EmbeddingsURL = os.Getenv("TEI_EMBEDDINGS_URL")
+	if cfg.TEI.EmbeddingsURL == "" {
+		cfg.TEI.EmbeddingsURL = "http://localhost:6500"
+	}
+
+	cfg.TEI.RerankerURL = os.Getenv("TEI_RERANKER_URL")
+	if cfg.TEI.RerankerURL == "" {
+		cfg.TEI.RerankerURL = "http://localhost:6501"
 	}
 
 	return nil

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/anton1ks96/college-core-api/internal/client/llm"
+	"github.com/anton1ks96/college-core-api/internal/client/tei"
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/internal/handlers"
 	"github.com/anton1ks96/college-core-api/internal/repository"
@@ -36,6 +37,7 @@ func Run() {
 	}
 
 	_ = llm.NewClient(cfg)
+	_ = tei.NewClient(cfg)
 
 	datasetRepo := repository.NewDatasetRepository(cfg, db)
 	fileRepo, err := repository.NewFileRepository(cfg)

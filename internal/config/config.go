@@ -19,6 +19,7 @@ type (
 		AuthService AuthServiceConfig
 		Limits      LimitsConfig
 		Qdrant      QdrantConfig
+		SGLang      SGLangConfig
 	}
 
 	Server struct {
@@ -61,6 +62,12 @@ type (
 		Host   string
 		Port   string
 		ApiKey string
+	}
+
+	SGLangConfig struct {
+		URL     string
+		Model   string
+		Timeout time.Duration
 	}
 )
 
@@ -138,6 +145,16 @@ func setFromEnv(cfg *Config) error {
 	}
 
 	cfg.Qdrant.ApiKey = os.Getenv("QDRANT_API_KEY")
+
+	cfg.SGLang.URL = os.Getenv("SGLANG_URL")
+	if cfg.SGLang.URL == "" {
+		cfg.SGLang.URL = "http://localhost:30000"
+	}
+
+	cfg.SGLang.Model = os.Getenv("SGLANG_MODEL")
+	if cfg.SGLang.Model == "" {
+		cfg.SGLang.Model = "default"
+	}
 
 	return nil
 }

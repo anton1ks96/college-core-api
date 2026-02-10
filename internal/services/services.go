@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/anton1ks96/college-core-api/internal/client/llm"
+	"github.com/anton1ks96/college-core-api/internal/client/tei"
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/internal/domain"
 	"github.com/anton1ks96/college-core-api/internal/repository"
@@ -65,16 +67,23 @@ type Repositories struct {
 	Topic             repository.TopicRepository
 	DatasetPermission repository.DatasetPermissionRepository
 	SavedChat         repository.SavedChatRepository
+	Vector            repository.VectorRepository
+}
+
+type Clients struct {
+	LLM *llm.Client
+	TEI *tei.Client
 }
 
 type Deps struct {
-	Repos  *Repositories
-	Config *config.Config
+	Repos   *Repositories
+	Clients *Clients
+	Config  *config.Config
 }
 
 func NewServices(deps Deps) *Services {
 	authService := NewAuthService(deps.Config)
-	datasetService := NewDatasetService(deps.Repos, deps.Config)
+	datasetService := NewDatasetService(deps.Repos, deps.Clients, deps.Config)
 	topicService := NewTopicService(deps.Repos, deps.Config)
 	datasetPermissionService := NewDatasetPermissionService(deps.Repos)
 	savedChatService := NewSavedChatService(deps.Repos)

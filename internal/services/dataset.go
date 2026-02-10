@@ -14,14 +14,16 @@ import (
 )
 
 type DatasetServiceImpl struct {
-	repos *Repositories
-	cfg   *config.Config
+	repos   *Repositories
+	clients *Clients
+	cfg     *config.Config
 }
 
-func NewDatasetService(repos *Repositories, cfg *config.Config) *DatasetServiceImpl {
+func NewDatasetService(repos *Repositories, clients *Clients, cfg *config.Config) *DatasetServiceImpl {
 	return &DatasetServiceImpl{
-		repos: repos,
-		cfg:   cfg,
+		repos:   repos,
+		clients: clients,
+		cfg:     cfg,
 	}
 }
 

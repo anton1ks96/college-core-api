@@ -40,8 +40,15 @@ func Run() {
 	}
 	defer qdrantClient.Close()
 
-	_ = llm.NewClient(cfg)
-	_ = tei.NewClient(cfg)
+	llmClient := llm.NewClient(cfg)
+	teiClient := tei.NewClient(cfg)
+
+	vectorRepo := repository.NewVectorRepository(cfg, qdrantClient)
+
+	ctx := context.Background()
+	if err := vectorRepo.EnsureCollection(ctx, 1024); err != nil {
+		logger.Fatal(err)
+	}
 
 	datasetRepo := repository.NewDatasetRepository(cfg, db)
 	fileRepo, err := repository.NewFileRepository(cfg)
@@ -58,11 +65,18 @@ func Run() {
 		Topic:             topicRepo,
 		DatasetPermission: datasetPermissionRepo,
 		SavedChat:         savedChatRepo,
+		Vector:            vectorRepo,
+	}
+
+	clients := &services.Clients{
+		LLM: llmClient,
+		TEI: teiClient,
 	}
 
 	servicesInstance := services.NewServices(services.Deps{
-		Repos:  repos,
-		Config: cfg,
+		Repos:   repos,
+		Clients: clients,
+		Config:  cfg,
 	})
 
 	handler := handlers.NewHandler(servicesInstance, cfg)

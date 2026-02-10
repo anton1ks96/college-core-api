@@ -47,6 +47,13 @@ type DatasetPermissionRepository interface {
 	GetPermissionsByDatasetID(ctx context.Context, datasetID string) ([]domain.DatasetPermission, error)
 }
 
+type VectorRepository interface {
+	EnsureCollection(ctx context.Context, vectorSize uint64) error
+	UpsertChunks(ctx context.Context, datasetID string, version int, title string, chunks []domain.ChunkData, vectors [][]float32) (int, error)
+	Search(ctx context.Context, datasetID string, version int, queryVector []float32, k uint64) ([]domain.SearchHit, error)
+	DeleteByDatasetID(ctx context.Context, datasetID string) error
+}
+
 type SavedChatRepository interface {
 	Create(ctx context.Context, chat *domain.SavedChat) error
 	GetByID(ctx context.Context, id string) (*domain.SavedChat, error)

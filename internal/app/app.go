@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,11 +32,13 @@ func Run() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	defer mysql.Close(db)
 
-	_, err = qdrant.NewClient(cfg)
+	qdrantClient, err := qdrant.NewClient(cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
+	defer qdrantClient.Close()
 
 	_ = llm.NewClient(cfg)
 	_ = tei.NewClient(cfg)
@@ -68,7 +72,7 @@ func Run() {
 	srv := server.NewServer(cfg, router)
 
 	go func() {
-		if err := srv.Run(); err != nil {
+		if err := srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal(err)
 		}
 	}()

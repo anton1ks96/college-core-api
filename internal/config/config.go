@@ -60,9 +60,10 @@ type (
 	}
 
 	QdrantConfig struct {
-		Host   string
-		Port   string
-		ApiKey string
+		Host       string
+		Port       string
+		ApiKey     string
+		Collection string
 	}
 
 	LLMConfig struct {
@@ -152,6 +153,11 @@ func setFromEnv(cfg *Config) error {
 	}
 
 	cfg.Qdrant.ApiKey = os.Getenv("QDRANT_API_KEY")
+
+	cfg.Qdrant.Collection = os.Getenv("QDRANT_COLLECTION")
+	if cfg.Qdrant.Collection == "" {
+		cfg.Qdrant.Collection = "datasets"
+	}
 
 	cfg.LLM.URL = os.Getenv("LLM_URL")
 	if cfg.LLM.URL == "" {

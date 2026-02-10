@@ -26,3 +26,12 @@ func NewClient(cfg *config.Config) (*sqlx.DB, error) {
 	logger.Info("Connected to MySQL successfully")
 	return db, nil
 }
+
+func Close(db *sqlx.DB) {
+	if err := db.Close(); err != nil {
+		err := fmt.Errorf("failed to close database connection: %w", err)
+		logger.Error(err)
+	} else {
+		logger.Info("MySQL connection closed")
+	}
+}

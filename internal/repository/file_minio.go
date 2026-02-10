@@ -44,7 +44,7 @@ func NewFileRepository(cfg *config.Config) (*FileMinIORepository, error) {
 		logger.Info(fmt.Sprintf("bucket %s created successfully", cfg.MinIO.Bucket))
 	}
 
-	logger.Info(fmt.Sprintf("successfully connected to MinIO at %s (bucket: %s)", cfg.MinIO.Endpoint, cfg.MinIO.Bucket))
+	logger.Info(fmt.Sprintf("Connected to MinIO at %s (bucket: %s)", cfg.MinIO.Endpoint, cfg.MinIO.Bucket))
 
 	return &FileMinIORepository{
 		client: client,

@@ -221,3 +221,17 @@ type ChatMessageInput struct {
 	Answer    string     `json:"answer" binding:"required"`
 	Citations []Citation `json:"citations,omitempty"`
 }
+
+type ChunkData struct {
+	Index int
+	Text  string
+}
+
+type SearchHit struct {
+	Score     float32
+	DatasetID string
+	Version   int
+	ChunkID   int
+	Title     string
+	Text      string
+}

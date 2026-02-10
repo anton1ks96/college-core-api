@@ -54,8 +54,9 @@ type StreamChoice struct {
 }
 
 type MessageDelta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
+	Role             string `json:"role,omitempty"`
+	Content          string `json:"content,omitempty"`
+	ReasoningContent string `json:"reasoning_content,omitempty"`
 }
 
 func (c *Client) ChatCompletionStream(ctx context.Context, messages []Message, temperature float64, maxTokens int) (<-chan StreamChunk, <-chan error) {

@@ -21,6 +21,7 @@ type (
 		Qdrant      QdrantConfig
 		LLM         LLMConfig
 		TEI         TEIConfig
+		RAG         RAGConfig
 	}
 
 	Server struct {
@@ -76,6 +77,14 @@ type (
 		EmbeddingsURL string
 		RerankerURL   string
 		Timeout       time.Duration
+	}
+
+	RAGConfig struct {
+		SearchTopK     int
+		RerankTopN     int
+		LLMTemperature float64
+		LLMMaxTokens   int
+		VectorSize     int
 	}
 )
 

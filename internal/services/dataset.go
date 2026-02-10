@@ -5,13 +5,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
+	"github.com/anton1ks96/college-core-api/internal/client/llm"
 	"github.com/anton1ks96/college-core-api/internal/config"
 	"github.com/anton1ks96/college-core-api/internal/domain"
+	"github.com/anton1ks96/college-core-api/internal/rag"
 	"github.com/anton1ks96/college-core-api/pkg/logger"
 	"github.com/google/uuid"
 )
+
+const datasetVersion = 1
 
 type DatasetServiceImpl struct {
 	repos   *Repositories
@@ -214,7 +219,7 @@ func (s *DatasetServiceImpl) Delete(ctx context.Context, datasetID, userID strin
 	return nil
 }
 
-func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID, role, question string) (*domain.AskResponse, error) {
+func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID, role, question string) (<-chan domain.AskEvent, error) {
 	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
 	if err != nil {
 		return nil, err
@@ -232,7 +237,104 @@ func (s *DatasetServiceImpl) AskQuestion(ctx context.Context, datasetID, userID,
 		return nil, fmt.Errorf("dataset is not indexed yet, please wait")
 	}
 
-	return nil, fmt.Errorf("not implemented")
+	events := make(chan domain.AskEvent)
+
+	go func() {
+		defer close(events)
+
+		queryVector, err := s.clients.TEI.Embed(ctx, question)
+		if err != nil {
+			s.sendEvent(ctx, events, domain.AskEvent{Type: "error", Error: "failed to embed question"})
+			return
+		}
+
+		hits, err := s.repos.Vector.Search(ctx, datasetID, datasetVersion, queryVector, uint64(s.cfg.RAG.SearchTopK))
+		if err != nil {
+			s.sendEvent(ctx, events, domain.AskEvent{Type: "error", Error: "failed to search vectors"})
+			return
+		}
+
+		if len(hits) == 0 {
+			s.sendEvent(ctx, events, domain.AskEvent{Type: "error", Error: "no relevant content found"})
+			return
+		}
+
+		texts := make([]string, len(hits))
+		for i, h := range hits {
+			texts[i] = h.Text
+		}
+
+		reranked, err := s.clients.TEI.Rerank(ctx, question, texts)
+		if err != nil {
+			s.sendEvent(ctx, events, domain.AskEvent{Type: "error", Error: "failed to rerank"})
+			return
+		}
+
+		sort.Slice(reranked, func(i, j int) bool {
+			return reranked[i].Score > reranked[j].Score
+		})
+
+		topN := s.cfg.RAG.RerankTopN
+		if len(reranked) < topN {
+			topN = len(reranked)
+		}
+
+		contextChunks := make([]string, topN)
+		citations := make([]domain.Citation, topN)
+		for i := 0; i < topN; i++ {
+			idx := reranked[i].Index
+			contextChunks[i] = hits[idx].Text
+			citations[i] = domain.Citation{
+				ChunkID:          hits[idx].ChunkID,
+				Score:            reranked[i].Score,
+				OriginalScore:    float64(hits[idx].Score),
+				ScoreImprovement: reranked[i].Score - float64(hits[idx].Score),
+			}
+		}
+
+		messages := []llm.Message{
+			{Role: "system", Content: rag.SystemPrompt},
+			{Role: "user", Content: rag.BuildUserPrompt(question, contextChunks)},
+		}
+
+		chunks, errc := s.clients.LLM.ChatCompletionStream(ctx, messages, s.cfg.RAG.LLMTemperature, s.cfg.RAG.LLMMaxTokens)
+
+		for chunk := range chunks {
+			for _, choice := range chunk.Choices {
+				if choice.Delta.ReasoningContent != "" {
+					if !s.sendEvent(ctx, events, domain.AskEvent{Type: "thinking", Delta: choice.Delta.ReasoningContent}) {
+						return
+					}
+				}
+				if choice.Delta.Content != "" {
+					if !s.sendEvent(ctx, events, domain.AskEvent{Type: "delta", Delta: choice.Delta.Content}) {
+						return
+					}
+				}
+			}
+		}
+
+		if err := <-errc; err != nil {
+			s.sendEvent(ctx, events, domain.AskEvent{Type: "error", Error: "llm generation failed"})
+			return
+		}
+
+		s.sendEvent(ctx, events, domain.AskEvent{Type: "citations", Citations: citations})
+		s.sendEvent(ctx, events, domain.AskEvent{Type: "done"})
+	}()
+
+	return events, nil
+}
+
+// sendEvent отправляет событие в канал с проверкой отмены контекста
+// Возвращает false если контекст отменён (клиент отключился)
+func (s *DatasetServiceImpl) sendEvent(ctx context.Context, ch chan<- domain.AskEvent, event domain.AskEvent) bool {
+	select {
+	case ch <- event:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 func (s *DatasetServiceImpl) Reindex(ctx context.Context, datasetID, userID string) (*domain.IndexResponse, error) {
@@ -245,5 +347,59 @@ func (s *DatasetServiceImpl) Reindex(ctx context.Context, datasetID, userID stri
 		return nil, fmt.Errorf("access denied: only owner can reindex dataset")
 	}
 
-	return nil, fmt.Errorf("not implemented")
+	content, err := s.repos.File.Download(ctx, dataset.FilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download dataset: %w", err)
+	}
+
+	normalized := rag.NormalizeMarkdown(string(content))
+
+	assignmentID := ""
+	if dataset.AssignmentID != nil {
+		assignmentID = *dataset.AssignmentID
+	}
+
+	docs := rag.ChunkStudentMarkdown(normalized, dataset.UserID, assignmentID, datasetVersion, dataset.Title)
+	if len(docs) == 0 {
+		return nil, fmt.Errorf("dataset content is empty or has no sections")
+	}
+
+	texts := make([]string, len(docs))
+	for i, doc := range docs {
+		texts[i] = doc.PageContent
+	}
+
+	vectors, err := s.clients.TEI.EmbedBatch(ctx, texts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embeddings: %w", err)
+	}
+
+	if err := s.repos.Vector.DeleteByDatasetID(ctx, datasetID); err != nil {
+		return nil, fmt.Errorf("failed to delete old vectors: %w", err)
+	}
+
+	chunks := make([]domain.ChunkData, len(docs))
+	for i, doc := range docs {
+		chunks[i] = domain.ChunkData{
+			Index: doc.Metadata.ChunkID,
+			Text:  doc.PageContent,
+		}
+	}
+
+	count, err := s.repos.Vector.UpsertChunks(ctx, datasetID, datasetVersion, dataset.Title, chunks, vectors)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert vectors: %w", err)
+	}
+
+	if err := s.repos.Dataset.UpdateIndexedAt(ctx, datasetID); err != nil {
+		return nil, fmt.Errorf("failed to update indexed_at: %w", err)
+	}
+
+	logger.Info(fmt.Sprintf("dataset %s reindexed: %d chunks", datasetID, count))
+
+	return &domain.IndexResponse{
+		Success: true,
+		Chunks:  count,
+		Message: fmt.Sprintf("Successfully indexed %d chunks", count),
+	}, nil
 }

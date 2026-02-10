@@ -46,7 +46,7 @@ func Run() {
 	vectorRepo := repository.NewVectorRepository(cfg, qdrantClient)
 
 	ctx := context.Background()
-	if err := vectorRepo.EnsureCollection(ctx, 1024); err != nil {
+	if err := vectorRepo.EnsureCollection(ctx, uint64(cfg.RAG.VectorSize)); err != nil {
 		logger.Fatal(err)
 	}
 

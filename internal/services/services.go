@@ -17,7 +17,7 @@ type DatasetService interface {
 	GetList(ctx context.Context, userID string, role string, page, limit int) (*domain.DatasetListResponse, error)
 	Update(ctx context.Context, datasetID, userID, title string, content *string) (*domain.Dataset, error)
 	Delete(ctx context.Context, datasetID, userID string) error
-	AskQuestion(ctx context.Context, datasetID, userID, role, question string) (*domain.AskResponse, error)
+	AskQuestion(ctx context.Context, datasetID, userID, role, question string) (<-chan domain.AskEvent, error)
 	Reindex(ctx context.Context, datasetID, userID string) (*domain.IndexResponse, error)
 }
 

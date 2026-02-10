@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -290,7 +291,7 @@ func (h *Handler) askQuestion(c *gin.Context) {
 		return
 	}
 
-	response, err := h.services.Dataset.AskQuestion(
+	events, err := h.services.Dataset.AskQuestion(
 		c.Request.Context(),
 		datasetID,
 		userID.(string),
@@ -323,7 +324,18 @@ func (h *Handler) askQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+
+	c.Stream(func(w io.Writer) bool {
+		event, ok := <-events
+		if !ok {
+			return false
+		}
+		c.SSEvent("message", event)
+		return true
+	})
 }
 
 func (h *Handler) reindexDataset(c *gin.Context) {

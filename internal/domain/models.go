@@ -38,6 +38,13 @@ type AskResponse struct {
 	Citations []Citation `json:"citations"`
 }
 
+type AskEvent struct {
+	Type      string     `json:"type"`
+	Delta     string     `json:"delta,omitempty"`
+	Citations []Citation `json:"citations,omitempty"`
+	Error     string     `json:"error,omitempty"`
+}
+
 type Citation struct {
 	ChunkID          int     `json:"chunk_id"`
 	Score            float64 `json:"score"`

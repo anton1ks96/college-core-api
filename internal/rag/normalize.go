@@ -24,17 +24,17 @@ func NormalizeMarkdown(text string) string {
 
 func fixEncodingIssues(text string) string {
 	replacements := map[string]string{
-		`РІ`:   `в`,
-		`вЂ"`:  `—`,
-		`вЂ™`:  `'`,
-		`вЂњ`:  `"`,
-		`вЂќ`:  `"`,
-		`вЂў`:  `•`,
-		`вЂ¦`:  `…`,
+		`РІ`:  `в`,
+		`вЂ"`: `—`,
+		`вЂ™`: `'`,
+		`вЂњ`: `"`,
+		`вЂќ`: `"`,
+		`вЂў`: `•`,
+		`вЂ¦`: `…`,
 	}
 
-	for old, new := range replacements {
-		text = strings.ReplaceAll(text, old, new)
+	for old, n := range replacements {
+		text = strings.ReplaceAll(text, old, n)
 	}
 
 	return text
@@ -85,7 +85,7 @@ func normalizeLists(text string) string {
 	lines := strings.Split(text, "\n")
 	result := make([]string, 0, len(lines))
 
-	bulletPattern := regexp.MustCompile(`^(\s*)[\*\+]\s+`)
+	bulletPattern := regexp.MustCompile(`^(\s*)[*+]\s+`)
 	numberedPattern := regexp.MustCompile(`^(\s*\d+\.)\s+`)
 
 	for _, line := range lines {

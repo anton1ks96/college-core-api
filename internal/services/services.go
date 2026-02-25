@@ -19,6 +19,8 @@ type DatasetService interface {
 	Delete(ctx context.Context, datasetID, userID string) error
 	AskQuestion(ctx context.Context, datasetID, userID, role, question string) (<-chan domain.AskEvent, error)
 	Reindex(ctx context.Context, datasetID, userID string) (*domain.IndexResponse, error)
+	SetTag(ctx context.Context, datasetID, userID, role string, tag *string) error
+	SearchByTag(ctx context.Context, userID, role, tag string, page, limit int) (*domain.DatasetListResponse, error)
 }
 
 type AuthService interface {

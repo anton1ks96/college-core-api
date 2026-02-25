@@ -65,7 +65,7 @@ func (r *DatasetMySQLRepository) Create(ctx context.Context, dataset *domain.Dat
 func (r *DatasetMySQLRepository) GetByID(ctx context.Context, id string) (*domain.Dataset, error) {
 	var dataset domain.Dataset
 	query := `
-		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id, tag
 		FROM datasets
 		WHERE id = ?
 	`
@@ -94,7 +94,7 @@ func (r *DatasetMySQLRepository) GetByUserID(ctx context.Context, userID string,
 	}
 
 	query := `
-		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id, tag
 		FROM datasets
 		WHERE user_id = ?
 		ORDER BY created_at DESC
@@ -128,7 +128,7 @@ func (r *DatasetMySQLRepository) GetByTeacherID(ctx context.Context, teacherID s
 	}
 
 	query := `
-		SELECT DISTINCT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id
+		SELECT DISTINCT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id, d.tag
 		FROM datasets d
 		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by_id = ?
 		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
@@ -158,7 +158,7 @@ func (r *DatasetMySQLRepository) GetAll(ctx context.Context, offset, limit int) 
 	}
 
 	query := `
-		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id, tag
 		FROM datasets
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
@@ -266,4 +266,89 @@ func (r *DatasetMySQLRepository) ExistsByUserIDAndTopicID(ctx context.Context, u
 	}
 
 	return count > 0, nil
+}
+
+func (r *DatasetMySQLRepository) SetTag(ctx context.Context, id string, tag *string) error {
+	query := `UPDATE datasets SET tag = ?, updated_at = ? WHERE id = ?`
+
+	result, err := r.db.ExecContext(ctx, query, tag, time.Now(), id)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to set tag for dataset %s: %w", id, err))
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("dataset not found")
+	}
+
+	return nil
+}
+
+func (r *DatasetMySQLRepository) GetByTagAll(ctx context.Context, tag string, offset, limit int) ([]domain.Dataset, int, error) {
+	var datasets []domain.Dataset
+	var total int
+
+	countQuery := `SELECT COUNT(*) FROM datasets WHERE tag = ?`
+	err := r.db.GetContext(ctx, &total, countQuery, tag)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to count datasets by tag %s: %w", tag, err))
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT id, user_id, author, title, file_path, created_at, updated_at, indexed_at, topic_id, assignment_id, tag
+		FROM datasets
+		WHERE tag = ?
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	err = r.db.SelectContext(ctx, &datasets, query, tag, limit, offset)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get datasets by tag %s: %w", tag, err))
+		return nil, 0, err
+	}
+
+	return datasets, total, nil
+}
+
+func (r *DatasetMySQLRepository) GetByTagAndTeacherID(ctx context.Context, tag, teacherID string, offset, limit int) ([]domain.Dataset, int, error) {
+	var datasets []domain.Dataset
+	var total int
+
+	countQuery := `
+		SELECT COUNT(DISTINCT d.id)
+		FROM datasets d
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by_id = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE (ta.id IS NOT NULL OR dp.id IS NOT NULL) AND d.tag = ?
+	`
+	err := r.db.GetContext(ctx, &total, countQuery, teacherID, teacherID, tag)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to count datasets by tag %s for teacher %s: %w", tag, teacherID, err))
+		return nil, 0, err
+	}
+
+	query := `
+		SELECT DISTINCT d.id, d.user_id, d.author, d.title, d.file_path, d.created_at, d.updated_at, d.indexed_at, d.topic_id, d.assignment_id, d.tag
+		FROM datasets d
+		LEFT JOIN topic_assignments ta ON d.assignment_id = ta.id AND ta.assigned_by_id = ?
+		LEFT JOIN datasets_permission dp ON d.id = dp.dataset_id AND dp.teacher_id = ?
+		WHERE (ta.id IS NOT NULL OR dp.id IS NOT NULL) AND d.tag = ?
+		ORDER BY d.created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	err = r.db.SelectContext(ctx, &datasets, query, teacherID, teacherID, tag, limit, offset)
+	if err != nil {
+		logger.Error(fmt.Errorf("failed to get datasets by tag %s for teacher %s: %w", tag, teacherID, err))
+		return nil, 0, err
+	}
+
+	return datasets, total, nil
 }

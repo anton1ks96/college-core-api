@@ -377,6 +377,136 @@ func (h *Handler) reindexDataset(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *Handler) setDatasetTag(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	var req domain.SetTagRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	err := h.services.Dataset.SetTag(
+		c.Request.Context(),
+		datasetID,
+		userID.(string),
+		role.(string),
+		&req.Tag,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "access denied" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "access denied",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Tag set successfully",
+	})
+}
+
+func (h *Handler) deleteDatasetTag(c *gin.Context) {
+	datasetID := c.Param("id")
+	if datasetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "dataset id is required",
+		})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	err := h.services.Dataset.SetTag(
+		c.Request.Context(),
+		datasetID,
+		userID.(string),
+		role.(string),
+		nil,
+	)
+
+	if err != nil {
+		if err.Error() == "dataset not found" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "dataset not found",
+			})
+			return
+		}
+		if err.Error() == "access denied" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "access denied",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Tag removed successfully",
+	})
+}
+
+func (h *Handler) searchDatasetsByTag(c *gin.Context) {
+	tag := c.Query("tag")
+	if tag == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "tag query parameter is required",
+		})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	response, err := h.services.Dataset.SearchByTag(
+		c.Request.Context(),
+		userID.(string),
+		role.(string),
+		tag,
+		page,
+		limit,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func isMarkdownFile(filename string) bool {
 	return len(filename) > 3 && (filename[len(filename)-3:] == ".md" ||
 		(len(filename) > 9 && filename[len(filename)-9:] == ".markdown"))

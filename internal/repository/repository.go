@@ -17,6 +17,9 @@ type DatasetRepository interface {
 	Delete(ctx context.Context, id string) error
 	UpdateIndexedAt(ctx context.Context, id string) error
 	ExistsByUserIDAndTopicID(ctx context.Context, userID, topicID string) (bool, error)
+	SetTag(ctx context.Context, id string, tag *string) error
+	GetByTagAll(ctx context.Context, tag string, offset, limit int) ([]domain.Dataset, int, error)
+	GetByTagAndTeacherID(ctx context.Context, tag, teacherID string, offset, limit int) ([]domain.Dataset, int, error)
 }
 
 type FileRepository interface {

@@ -135,6 +135,7 @@ func (s *DatasetServiceImpl) GetByID(ctx context.Context, datasetID, userID stri
 		CreatedAt: dataset.CreatedAt,
 		UpdatedAt: dataset.UpdatedAt,
 		IndexedAt: dataset.IndexedAt,
+		Tag:       dataset.Tag,
 	}
 
 	return response, nil
@@ -401,5 +402,65 @@ func (s *DatasetServiceImpl) Reindex(ctx context.Context, datasetID, userID stri
 		Success: true,
 		Chunks:  count,
 		Message: fmt.Sprintf("Successfully indexed %d chunks", count),
+	}, nil
+}
+
+func (s *DatasetServiceImpl) SetTag(ctx context.Context, datasetID, userID, role string, tag *string) error {
+	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
+	if err != nil {
+		return err
+	}
+
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return err
+	}
+	if !hasAccess {
+		return fmt.Errorf("access denied")
+	}
+
+	var normalizedTag *string
+	if tag != nil {
+		t := strings.ToLower(strings.TrimSpace(*tag))
+		normalizedTag = &t
+	}
+
+	return s.repos.Dataset.SetTag(ctx, datasetID, normalizedTag)
+}
+
+func (s *DatasetServiceImpl) SearchByTag(ctx context.Context, userID, role, tag string, page, limit int) (*domain.DatasetListResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	if tag == "*" {
+		return s.GetList(ctx, userID, role, page, limit)
+	}
+
+	normalizedTag := strings.ToLower(strings.TrimSpace(tag))
+
+	offset := (page - 1) * limit
+	var datasets []domain.Dataset
+	var total int
+	var err error
+
+	if role == "admin" {
+		datasets, total, err = s.repos.Dataset.GetByTagAll(ctx, normalizedTag, offset, limit)
+	} else {
+		datasets, total, err = s.repos.Dataset.GetByTagAndTeacherID(ctx, normalizedTag, userID, offset, limit)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to search datasets by tag: %w", err)
+	}
+
+	return &domain.DatasetListResponse{
+		Datasets: datasets,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
 	}, nil
 }

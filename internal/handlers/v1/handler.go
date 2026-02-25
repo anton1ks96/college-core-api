@@ -25,12 +25,16 @@ func (h *Handler) Init(api *gin.RouterGroup) {
 		datasets.POST("", httpmw.RateLimitMiddleware(h.cfg.Limits.UploadRateLimit), h.createDataset)
 
 		datasets.GET("", h.getDatasets)
+		datasets.GET("/search", httpmw.RequireRole("teacher", "admin"), h.searchDatasetsByTag)
 		datasets.GET("/:id", h.getDataset)
 		datasets.PUT("/:id", h.updateDataset)
 		datasets.DELETE("/:id", h.deleteDataset)
 
 		datasets.POST("/:id/ask", httpmw.RateLimitMiddleware(h.cfg.Limits.AskRateLimit), h.askQuestion)
 		datasets.POST("/:id/reindex", h.reindexDataset)
+
+		datasets.PUT("/:id/tag", httpmw.RequireRole("teacher", "admin"), h.setDatasetTag)
+		datasets.DELETE("/:id/tag", httpmw.RequireRole("teacher", "admin"), h.deleteDatasetTag)
 
 		datasets.GET("/:id/permissions", httpmw.RequireRole("admin"), h.getDatasetPermissions)
 		datasets.POST("/:id/permissions", httpmw.RequireRole("admin"), h.grantDatasetPermission)

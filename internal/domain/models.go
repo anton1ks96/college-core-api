@@ -19,6 +19,7 @@ type Dataset struct {
 	IndexedAt    *time.Time `json:"indexed_at" db:"indexed_at"`
 	TopicID      *string    `json:"topic_id,omitempty" db:"topic_id"`
 	AssignmentID *string    `json:"assignment_id,omitempty" db:"assignment_id"`
+	Tag          *string    `json:"tag,omitempty" db:"tag"`
 	Content      string     `json:"content,omitempty"`
 }
 
@@ -71,6 +72,7 @@ type DatasetResponse struct {
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	IndexedAt *time.Time `json:"indexed_at,omitempty"`
+	Tag       *string    `json:"tag,omitempty"`
 }
 
 type IndexResponse struct {
@@ -227,6 +229,10 @@ type ChatMessageInput struct {
 	Question  string     `json:"question" binding:"required"`
 	Answer    string     `json:"answer" binding:"required"`
 	Citations []Citation `json:"citations,omitempty"`
+}
+
+type SetTagRequest struct {
+	Tag string `json:"tag" binding:"required,max=100"`
 }
 
 type ChunkData struct {

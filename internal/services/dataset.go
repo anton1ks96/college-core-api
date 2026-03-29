@@ -201,14 +201,18 @@ func (s *DatasetServiceImpl) Update(ctx context.Context, datasetID, userID, titl
 	return dataset, nil
 }
 
-func (s *DatasetServiceImpl) Delete(ctx context.Context, datasetID, userID string) error {
+func (s *DatasetServiceImpl) Delete(ctx context.Context, datasetID, userID, role string) error {
 	dataset, err := s.repos.Dataset.GetByID(ctx, datasetID)
 	if err != nil {
 		return err
 	}
 
-	if !checkEditPermission(userID, dataset.UserID) {
-		return fmt.Errorf("access denied: only owner can delete dataset")
+	hasAccess, err := s.hasReadAccess(ctx, datasetID, userID, dataset.UserID, role)
+	if err != nil {
+		return err
+	}
+	if !hasAccess {
+		return fmt.Errorf("access denied")
 	}
 
 	err = s.repos.Dataset.Delete(ctx, datasetID)
@@ -216,7 +220,7 @@ func (s *DatasetServiceImpl) Delete(ctx context.Context, datasetID, userID strin
 		return fmt.Errorf("failed to delete dataset: %w", err)
 	}
 
-	logger.Info(fmt.Sprintf("dataset %s soft deleted by user %s", datasetID, userID))
+	logger.Info(fmt.Sprintf("dataset %s soft deleted by user %s (role: %s)", datasetID, userID, role))
 	return nil
 }
 

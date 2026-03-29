@@ -239,11 +239,13 @@ func (h *Handler) deleteDataset(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("user_id")
+	role, _ := c.Get("role")
 
 	err := h.services.Dataset.Delete(
 		c.Request.Context(),
 		datasetID,
 		userID.(string),
+		role.(string),
 	)
 
 	if err != nil {
@@ -253,9 +255,9 @@ func (h *Handler) deleteDataset(c *gin.Context) {
 			})
 			return
 		}
-		if err.Error() == "access denied: only owner can delete dataset" {
+		if err.Error() == "access denied" {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "only owner can delete dataset",
+				"error": "access denied",
 			})
 			return
 		}

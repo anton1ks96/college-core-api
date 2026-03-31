@@ -220,7 +220,7 @@ func (s *DatasetServiceImpl) Delete(ctx context.Context, datasetID, userID, role
 		return fmt.Errorf("failed to delete dataset: %w", err)
 	}
 
-	logger.Info(fmt.Sprintf("dataset %s soft deleted by user %s (role: %s)", datasetID, userID, role))
+	logger.Info(fmt.Sprintf("dataset %s deleted by user %s (role: %s)", datasetID, userID, role))
 	return nil
 }
 

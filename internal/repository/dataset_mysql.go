@@ -208,13 +208,9 @@ func (r *DatasetMySQLRepository) Update(ctx context.Context, dataset *domain.Dat
 }
 
 func (r *DatasetMySQLRepository) Delete(ctx context.Context, id string) error {
-	query := `
-		UPDATE datasets
-		SET updated_at = ?
-		WHERE id = ?
-	`
+	query := `DELETE FROM datasets WHERE id = ?`
 
-	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		logger.Error(fmt.Errorf("failed to delete dataset %s: %w", id, err))
 		return err
@@ -229,7 +225,7 @@ func (r *DatasetMySQLRepository) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("dataset not found or already deleted")
 	}
 
-	logger.Debug(fmt.Sprintf("dataset %s soft deleted", id))
+	logger.Debug(fmt.Sprintf("dataset %s deleted", id))
 	return nil
 }
 

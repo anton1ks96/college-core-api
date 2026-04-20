@@ -43,7 +43,26 @@ func (c *Client) Embed(ctx context.Context, input string) ([]float32, error) {
 	return vectors[0], nil
 }
 
+const embedBatchSize = 32
+
 func (c *Client) EmbedBatch(ctx context.Context, inputs []string) ([][]float32, error) {
+	result := make([][]float32, 0, len(inputs))
+
+	for start := 0; start < len(inputs); start += embedBatchSize {
+		end := min(start+embedBatchSize, len(inputs))
+
+		vectors, err := c.embedBatchChunk(ctx, inputs[start:end])
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, vectors...)
+	}
+
+	return result, nil
+}
+
+func (c *Client) embedBatchChunk(ctx context.Context, inputs []string) ([][]float32, error) {
 	body := struct {
 		Inputs []string `json:"inputs"`
 	}{Inputs: inputs}
